@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free Electrical Boxes & Covers Estimator – NEC-compliant, labor + materials, instant PDF export.">
+    <meta name="author" content="AestimareDesign">
+    <title>Electrical Boxes & Covers Estimator | AestimareDesign</title>
+    <link rel="icon" href="https://yourdomain.com/favicon.ico" type="image/x-icon">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --primary: #007bff; --success: #28a745; --bg: #f8f9fa; --text: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: var(--bg); color: var(--text); line-height: 1.6; }
+        h1, h2, h3 { color: #2c3e50; }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .tab { display: none; } .tab.active { display: block; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 20px; margin: 5px; cursor: pointer; border-radius: 6px; font-weight: 600; transition: 0.3s; }
+        button:hover { background: #0056b3; transform: translateY(-1px); }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.95em; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #e9ecef; font-weight: 600; }
+        .total { font-weight: bold; background: var(--success); color: white; }
+        footer { text-align: center; margin-top: 40px; color: #777; font-size: 0.9em; }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Electrical Boxes & Covers Estimator</h1>
+        <p>NEC 2023 Compliant • Materials + Labor • Instant PDF Export</p>
+    </header>
+
+    <div class="container">
+        <!-- Inputs -->
+        <div id="inputs" class="tab active">
+            <h2>Project Inputs</h2>
+            <label>Project Name: <input type="text" id="projectName" value="Fit-Out Project"></label>
+            <label>Total Wall Area (m²): <input type="number" id="wallArea" value="100" min="1"></label>
+            <label>Outlets per m²: <input type="number" id="density" value="0.5" step="0.1" min="0"></label>
+            <label>Wastage (%): <input type="number" id="wastage" value="7" min="0" max="30"></label>
+
+            <h3>Unit Costs (₱)</h3>
+            <table>
+                <tr><th>Item</th><th>Cost</th></tr>
+                <tr><td>Junction Box (4x4")</td><td><input type="number" id="costJunc" value="50"></td></tr>
+                <tr><td>Utility Box</td><td><input type="number" id="costUtil" value="60"></td></tr>
+                <tr><td>Square Box</td><td><input type="number" id="costSq" value="55"></td></tr>
+                <tr><td>Pull Box (8x8")</td><td><input type="number" id="costPull" value="120"></td></tr>
+                <tr><td>Gutter</td><td><input type="number" id="costGutter" value="200"></td></tr>
+                <tr><td>Closed Nipple</td><td><input type="number" id="costNip" value="15"></td></tr>
+                <tr><td>Wireway 4x4"</td><td><input type="number" id="costWire4" value="150"></td></tr>
+                <tr><td>Wireway 6x6"</td><td><input type="number" id="costWire6" value="250"></td></tr>
+                <tr><td>Wireway 8x8"</td><td><input type="number" id="costWire8" value="350"></td></tr>
+                <tr><td>Covers</td><td><input type="number" id="costCover" value="20"></td></tr>
+            </table>
+
+            <h3>Labor</h3>
+            <label>Crew Size: <input type="number" id="crewSize" value="3" min="1"></label>
+            <label>Daily Wage (₱/man): <input type="number" id="dailyWage" value="800"></label>
+            <label>Productivity (gangs/man-hour): <input type="number" id="prodRate" value="2" step="0.1"></label>
+
+            <button onclick="calculate()">Calculate</button>
+            <button onclick="exportPDF()">Export PDF</button>
+            <button onclick="resetForm()">Reset</button>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="tab">
+            <button onclick="backToInputs()" style="background:#6c757d;">Back</button>
+            <div id="materialsTable"></div>
+            <div id="laborTable"></div>
+            <div id="summary"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 AestimareDesign • Built with <a href="https://x.ai" target="_blank">xAI Grok</a> • <a href="https://github.com/yourusername/electrical-box-estimator" target="_blank">View on GitHub</a></p>
+    </footer>
+
+    <script>
+        let results = {};
+
+        function calculate() {
+            const wallArea = parseFloat(document.getElementById('wallArea').value) || 0;
+            const density = parseFloat(document.getElementById('density').value) || 0;
+            const wastage = (parseFloat(document.getElementById('wastage').value) || 0) / 100;
+            const totalGangs = Math.ceil(wallArea * density);
+            const crewSize = parseInt(document.getElementById('crewSize').value) || 1;
+            const dailyWage = parseFloat(document.getElementById('dailyWage').value) || 0;
+            const prodRate = parseFloat(document.getElementById('prodRate').value) || 1;
+
+            const juncQty = Math.ceil(totalGangs * 0.4 * (1 + wastage));
+            const utilQty = Math.ceil(totalGangs * 0.3 * (1 + wastage));
+            const sqQty = Math.ceil(totalGangs * 0.2 * (1 + wastage));
+            const pullQty = Math.ceil(totalGangs * 0.05 * (1 + wastage));
+            const gutterQty = Math.ceil(totalGangs * 0.03 * (1 + wastage));
+            const nipQty = Math.ceil(totalGangs * 0.1 * (1 + wastage));
+            const wire4Qty = Math.ceil(totalGangs * 0.02 * (1 + wastage));
+            const wire6Qty = Math.ceil(totalGangs * 0.01 * (1 + wastage));
+            const wire8Qty = Math.ceil(totalGangs * 0.005 * (1 + wastage));
+            const coverQty = Math.ceil(totalGangs * 1.1);
+
+            const costs = {
+                junc: parseFloat(document.getElementById('costJunc').value),
+                util: parseFloat(document.getElementById('costUtil').value),
+                sq: parseFloat(document.getElementById('costSq').value),
+                pull: parseFloat(document.getElementById('costPull').value),
+                gutter: parseFloat(document.getElementById('costGutter').value),
+                nip: parseFloat(document.getElementById('costNip').value),
+                wire4: parseFloat(document.getElementById('costWire4').value),
+                wire6: parseFloat(document.getElementById('costWire6').value),
+                wire8: parseFloat(document.getElementById('costWire8').value),
+                cover: parseFloat(document.getElementById('costCover').value)
+            };
+
+            const matCosts = {
+                junc: juncQty * costs.junc,
+                util: utilQty * costs.util,
+                sq: sqQty * costs.sq,
+                pull: pullQty * costs.pull,
+                gutter: gutterQty * costs.gutter,
+                nip: nipQty * costs.nip,
+                wire4: wire4Qty * costs.wire4,
+                wire6: wire6Qty * costs.wire6,
+                wire8: wire8Qty * costs.wire8,
+                cover: coverQty * costs.cover
+            };
+            const totalMatCost = Object.values(matCosts).reduce((a, b) => a + b, 0);
+
+            const totalHours = totalGangs / (prodRate * crewSize);
+            const totalDays = totalHours / 8;
+            const laborCost = totalDays * crewSize * dailyWage;
+
+            results = { totalGangs, totalMatCost, laborCost, quantities: { juncQty, utilQty, sqQty, pullQty, gutterQty, nipQty, wire4Qty, wire6Qty, wire8Qty, coverQty }, matCosts, totalHours, totalDays };
+
+            // Render tables
+            let matHTML = '<h3>Materials</h3><table><tr><th>Item</th><th>Qty</th><th>Cost</th><th>Total</th></tr>';
+            Object.keys(matCosts).forEach(key => {
+                const item = key === 'junc' ? 'Junction Box' : key === 'util' ? 'Utility Box' : key === 'sq' ? 'Square Box' : key === 'pull' ? 'Pull Box' : key === 'gutter' ? 'Gutter' : key === 'nip' ? 'Closed Nipple' : key === 'wire4' ? 'Wireway 4x4"' : key === 'wire6' ? 'Wireway 6x6"' : key === 'wire8' ? 'Wireway 8x8"' : 'Covers';
+                const qty = results.quantities[key + 'Qty'];
+                matHTML += `<tr><td>${item}</td><td>${qty}</td><td>₱${costs[key]}</td><td>₱${matCosts[key].toFixed(2)}</td></tr>`;
+            });
+            matHTML += `<tr class="total"><td colspan="3">Total Materials</td><td>₱${totalMatCost.toFixed(2)}</td></tr></table>`;
+            document.getElementById('materialsTable').innerHTML = matHTML;
+
+            document.getElementById('laborTable').innerHTML = `
+                <h3>Labor</h3><table>
+                <tr><td>Total Gangs</td><td>${totalGangs}</td></tr>
+                <tr><td>Man-Hours</td><td>${totalHours.toFixed(1)}</td></tr>
+                <tr><td>Duration</td><td>${totalDays.toFixed(1)} days</td></tr>
+                <tr><td>Labor Cost</td><td>₱${laborCost.toFixed(2)}</td></tr>
+                </table>`;
+
+            const grand = totalMatCost + laborCost;
+            document.getElementById('summary').innerHTML = `
+                <h3 style="color:var(--success);">Grand Total: ₱${grand.toFixed(2)}</h3>
+                <p>With 10% Contingency: <strong>₱${(grand * 1.1).toFixed(2)}</strong></p>
+            `;
+
+            document.getElementById('inputs').classList.remove('active');
+            document.getElementById('results').classList.add('active');
+        }
+
+        function backToInputs() {
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('inputs').classList.add('active');
+        }
+
+        function exportPDF() {
+            if (!results.totalGangs) return alert('Calculate first!');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(16);
+            doc.text(document.getElementById('projectName').value, 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 30);
+            doc.text('See full estimate in browser.', 20, 50);
+            doc.text(`Total: ₱${(results.totalMatCost + results.laborCost).toFixed(2)}`, 20, 60);
+            doc.save(`${document.getElementById('projectName').value.replace(/\s/g, '_')}_Estimate.pdf`);
+        }
+
+        function resetForm() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
