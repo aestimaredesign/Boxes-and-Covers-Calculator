@@ -6,183 +6,2124 @@
     <meta name="description" content="Free Electrical Boxes & Covers Estimator – NEC-compliant, labor + materials, instant PDF export.">
     <meta name="author" content="AestimareDesign">
     <title>Electrical Boxes & Covers Estimator | AestimareDesign</title>
-    <link rel="icon" href="https://yourdomain.com/favicon.ico" type="image/x-icon">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --bg: #f8f9fa; --text: #333; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: var(--bg); color: var(--text); line-height: 1.6; }
-        h1, h2, h3 { color: #2c3e50; }
-        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
-        .tab { display: none; } .tab.active { display: block; }
-        button { background: var(--primary); color: white; border: none; padding: 12px 20px; margin: 5px; cursor: pointer; border-radius: 6px; font-weight: 600; transition: 0.3s; }
-        button:hover { background: #0056b3; transform: translateY(-1px); }
-        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.95em; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #e9ecef; font-weight: 600; }
-        .total { font-weight: bold; background: var(--success); color: white; }
-        footer { text-align: center; margin-top: 40px; color: #777; font-size: 0.9em; }
-        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --warning: #e67e22;
+            --danger: #c0392b;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --text-dark: #2c3e50;
+            --text-medium: #5d6d7e;
+            --text-light: #7f8c8d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.85rem;
+        }
+
+        .btn:hover, .btn:focus {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            outline: 2px solid var(--secondary);
+            outline-offset: 2px;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-section, .output-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--light);
+            color: var(--primary);
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: end;
+        }
+
+        .input-row-dynamic {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: end;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .unit-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .unit-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: var(--light);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .unit-btn.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+
+        .unit-btn:focus {
+            outline: 2px solid var(--secondary);
+            outline-offset: 2px;
+        }
+
+        .work-item {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .work-item-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bill-of-quantity-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .bill-of-quantity-table th,
+        .bill-of-quantity-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .bill-of-quantity-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        .bill-of-quantity-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .total-row {
+            font-weight: 600;
+            background-color: var(--light) !important;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .cost-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 1rem;
+        }
+
+        .cost-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--secondary);
+        }
+
+        .cost-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .validation-error {
+            color: var(--danger);
+            font-size: 0.875rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .tab-container {
+            margin-bottom: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--secondary);
+            color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .tab:focus {
+            outline: 2px solid var(--secondary);
+            outline-offset: -2px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .unit-label {
+            font-size: 0.8rem;
+            color: var(--text-medium);
+            margin-top: 2px;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .crew-sizing {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--success);
+        }
+
+        .crew-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .crew-option {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .bill-of-quantity-table td:nth-child(3),
+        .bill-of-quantity-table td:nth-child(5),
+        .bill-of-quantity-table td:nth-child(6),
+        .bill-of-quantity-table td:nth-child(7) { text-align: right; }
+        .bill-of-quantity-table td:nth-child(1),
+        .bill-of-quantity-table td:nth-child(4) { text-align: center; }
+
+        .hidden {
+            display: none;
+        }
+
+        .remove-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 5px 10px;
+            font-size: 0.85rem;
+        }
+
+        .remove-btn:hover, .remove-btn:focus {
+            opacity: 0.9;
+            outline: 2px solid var(--danger);
+            outline-offset: 2px;
+        }
+
+        .input-error {
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.2) !important;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 0.75rem;
+            margin-top: 3px;
+            display: none;
+        }
+
+        /* Help section backgrounds */
+        .help-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .help-section h3 {
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            color: var(--text-dark);
+        }
+
+        .how-to-use {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196f3;
+        }
+
+        .calculation-formulas {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left: 4px solid #4caf50;
+        }
+
+        .standard-sizes {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 4px solid #ff9800;
+        }
+
+        .step-guide p {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .formula-box, .reference-box {
+            padding: 15px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .formula-box h4, .reference-box h4 {
+            margin-top: 15px;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        .formula-box p, .reference-box ul {
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .reference-box ul {
+            padding-left: 20px;
+        }
+
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: var(--secondary);
+            color: white;
+            padding: 8px;
+            z-index: 100;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .skip-link:focus {
+            top: 6px;
+        }
+
+        /* Focus indicators */
+        *:focus {
+            outline: 2px solid var(--secondary);
+            outline-offset: 2px;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --primary: #000000;
+                --secondary: #0000ff;
+                --success: #008000;
+                --warning: #ffa500;
+                --danger: #ff0000;
+                --text-dark: #000000;
+                --text-medium: #000000;
+                --text-light: #000000;
+            }
+
+            .unit-label {
+                font-weight: bold;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Electrical Boxes & Covers Estimator</h1>
-        <p>NEC 2023 Compliant • Materials + Labor • Instant PDF Export</p>
-    </header>
-
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
     <div class="container">
-        <!-- Inputs -->
-        <div id="inputs" class="tab active">
-            <h2>Project Inputs</h2>
-            <label>Project Name: <input type="text" id="projectName" value="Fit-Out Project"></label>
-            <label>Total Wall Area (m²): <input type="number" id="wallArea" value="100" min="1"></label>
-            <label>Outlets per m²: <input type="number" id="density" value="0.5" step="0.1" min="0"></label>
-            <label>Wastage (%): <input type="number" id="wastage" value="7" min="0" max="30"></label>
+        <header>
+            <div class="header-content">
+                <h1>Electrical Boxes & Covers Estimator</h1>
+                <div class="controls">
+                    <button class="btn btn-success" id="exportPdfBtn" aria-label="Export results as PDF document">Export PDF</button>
+                    <button class="btn btn-success" id="exportExcelBtn" aria-label="Export results as Excel spreadsheet">Export Excel</button>
+                    <button class="btn btn-danger" id="resetBtn" aria-label="Reset all inputs and calculations">Reset</button>
+                </div>
+            </div>
+        </header>
 
-            <h3>Unit Costs (₱)</h3>
-            <table>
-                <tr><th>Item</th><th>Cost</th></tr>
-                <tr><td>Junction Box (4x4")</td><td><input type="number" id="costJunc" value="50"></td></tr>
-                <tr><td>Utility Box</td><td><input type="number" id="costUtil" value="60"></td></tr>
-                <tr><td>Square Box</td><td><input type="number" id="costSq" value="55"></td></tr>
-                <tr><td>Pull Box (8x8")</td><td><input type="number" id="costPull" value="120"></td></tr>
-                <tr><td>Gutter</td><td><input type="number" id="costGutter" value="200"></td></tr>
-                <tr><td>Closed Nipple</td><td><input type="number" id="costNip" value="15"></td></tr>
-                <tr><td>Wireway 4x4"</td><td><input type="number" id="costWire4" value="150"></td></tr>
-                <tr><td>Wireway 6x6"</td><td><input type="number" id="costWire6" value="250"></td></tr>
-                <tr><td>Wireway 8x8"</td><td><input type="number" id="costWire8" value="350"></td></tr>
-                <tr><td>Covers</td><td><input type="number" id="costCover" value="20"></td></tr>
-            </table>
+        <main id="main-content">
+            <div class="calculator-grid">
+                <div class="input-section">
+                    <h2 class="section-title">Project Inputs</h2>
 
-            <h3>Labor</h3>
-            <label>Crew Size: <input type="number" id="crewSize" value="3" min="1"></label>
-            <label>Daily Wage (₱/man): <input type="number" id="dailyWage" value="800"></label>
-            <label>Productivity (gangs/man-hour): <input type="number" id="prodRate" value="2" step="0.1"></label>
+                    <div class="input-group">
+                        <label for="projectName">Project Name</label>
+                        <input type="text" id="projectName" placeholder="Enter project name" value="Fit-Out Project" aria-required="true">
+                        <div class="error-message" id="projectNameError">Project name is required</div>
+                    </div>
 
-            <button onclick="calculate()">Calculate</button>
-            <button onclick="exportPDF()">Export PDF</button>
-            <button onclick="resetForm()">Reset</button>
-        </div>
+                    <div class="input-group">
+                        <label for="clientName">Client Name</label>
+                        <input type="text" id="clientName" placeholder="Enter client name">
+                    </div>
 
-        <!-- Results -->
-        <div id="results" class="tab">
-            <button onclick="backToInputs()" style="background:#6c757d;">Back</button>
-            <div id="materialsTable"></div>
-            <div id="laborTable"></div>
-            <div id="summary"></div>
-        </div>
+                    <div class="input-group">
+                        <label for="projectLocation">Project Location</label>
+                        <input type="text" id="projectLocation" placeholder="e.g., Manila, Philippines">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="preparedBy">Prepared By</label>
+                        <input type="text" id="preparedBy" placeholder="Enter preparer name">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="projectDate">Date</label>
+                        <input type="date" id="projectDate">
+                    </div>
+
+                    <div class="tab-container">
+                        <div class="tabs" role="tablist" aria-label="Project input sections">
+                            <div class="tab active" role="tab" aria-selected="true" aria-controls="general-tab" data-tab="general" id="tab-general" tabindex="0">General Parameters</div>
+                            <div class="tab" role="tab" aria-selected="false" aria-controls="boxes-tab" data-tab="boxes" id="tab-boxes" tabindex="0">Boxes & Covers</div>
+                            <div class="tab" role="tab" aria-selected="false" aria-controls="help-tab" data-tab="help" id="tab-help" tabindex="0">Help & Reference</div>
+                        </div>
+
+                        <div class="tab-content active" id="general-tab" role="tabpanel" aria-labelledby="tab-general">
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="wallArea" class="tooltip">Total Wall Area (m²)<span class="tooltiptext">Total wall area where boxes will be installed</span></label>
+                                    <input type="number" id="wallArea" value="100" min="1" aria-describedby="wallAreaDesc">
+                                    <div class="error-message" id="wallAreaError">Wall area must be positive</div>
+                                    <div class="unit-label">m²</div>
+                                    <div id="wallAreaDesc" class="sr-only">Total wall area where boxes will be installed</div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="density" class="tooltip">Outlets per m²<span class="tooltiptext">Number of electrical outlets per square meter</span></label>
+                                    <input type="number" id="density" value="0.5" step="0.1" min="0" aria-describedby="densityDesc">
+                                    <div class="error-message" id="densityError">Density must be positive</div>
+                                    <div id="densityDesc" class="sr-only">Number of electrical outlets per square meter</div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="wastage" class="tooltip">Wastage (%)<span class="tooltiptext">Percentage of additional materials for wastage</span></label>
+                                    <input type="number" id="wastage" value="7" min="0" max="30" aria-describedby="wastageDesc">
+                                    <div class="error-message" id="wastageError">Wastage must be between 0-30%</div>
+                                    <div id="wastageDesc" class="sr-only">Percentage of additional materials for wastage</div>
+                                </div>
+                            </div>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="laborRate" class="tooltip">Labor Rate (per hour)<span class="tooltiptext">Hourly rate for electrician labor</span></label>
+                                    <input type="number" id="laborRate" value="250" step="0.01" min="0" aria-describedby="laborRateDesc">
+                                    <div class="error-message" id="laborRateError">Labor rate must be positive</div>
+                                    <div class="unit-label currency-unit">PHP/hour</div>
+                                    <div id="laborRateDesc" class="sr-only">Hourly rate for electrician labor</div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="overheadRate" class="tooltip">Overhead Rate (%)<span class="tooltiptext">Percentage for general overhead costs</span></label>
+                                    <input type="number" id="overheadRate" value="15" step="0.1" min="0" max="100" aria-describedby="overheadRateDesc">
+                                    <div class="error-message" id="overheadRateError">Overhead rate must be between 0-100%</div>
+                                    <div id="overheadRateDesc" class="sr-only">Percentage for general overhead costs</div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="profitMarginRate" class="tooltip">Profit Margin (%)<span class="tooltiptext">Desired profit margin percentage</span></label>
+                                    <input type="number" id="profitMarginRate" value="20" step="0.1" min="0" max="100" aria-describedby="profitMarginDesc">
+                                    <div class="error-message" id="profitMarginError">Profit margin must be between 0-100%</div>
+                                    <div id="profitMarginDesc" class="sr-only">Desired profit margin percentage</div>
+                                </div>
+                            </div>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="currency">Currency</label>
+                                    <select id="currency" aria-describedby="currencyDesc">
+                                        <option value="PHP">Philippine Peso (PHP)</option>
+                                        <option value="USD">US Dollar ($)</option>
+                                        <option value="EUR">Euro (€)</option>
+                                        <option value="JPY">Japanese Yen (¥)</option>
+                                    </select>
+                                    <div id="currencyDesc" class="sr-only">Select the currency for cost calculations</div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="crewSize" class="tooltip">Crew Size<span class="tooltiptext">Number of workers in the installation crew</span></label>
+                                    <input type="number" id="crewSize" value="3" min="1" aria-describedby="crewSizeDesc">
+                                    <div class="error-message" id="crewSizeError">Crew size must be at least 1</div>
+                                    <div id="crewSizeDesc" class="sr-only">Number of workers in the installation crew</div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="prodRate" class="tooltip">Productivity (gangs/man-hour)<span class="tooltiptext">Installation productivity rate</span></label>
+                                    <input type="number" id="prodRate" value="2" step="0.1" min="0.1" aria-describedby="prodRateDesc">
+                                    <div class="error-message" id="prodRateError">Productivity rate must be positive</div>
+                                    <div id="prodRateDesc" class="sr-only">Installation productivity rate</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="boxes-tab" role="tabpanel" aria-labelledby="tab-boxes">
+                            <div class="work-item">
+                                <div class="work-item-title">
+                                    <span>Box Types & Distribution</span>
+                                </div>
+                                <div class="input-row">
+                                    <div class="input-group">
+                                        <label for="pctJunc" class="tooltip">Junction Box (%)<span class="tooltiptext">Percentage of junction boxes (4x4")</span></label>
+                                        <input type="number" id="pctJunc" value="35" min="0" max="100" aria-describedby="pctJuncDesc">
+                                        <div id="pctJuncDesc" class="sr-only">Percentage of junction boxes (4x4")</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="pctUtil" class="tooltip">Utility Box (%)<span class="tooltiptext">Percentage of utility boxes</span></label>
+                                        <input type="number" id="pctUtil" value="25" min="0" max="100" aria-describedby="pctUtilDesc">
+                                        <div id="pctUtilDesc" class="sr-only">Percentage of utility boxes</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="pctSq" class="tooltip">Square Box (%)<span class="tooltiptext">Percentage of square boxes</span></label>
+                                        <input type="number" id="pctSq" value="20" min="0" max="100" aria-describedby="pctSqDesc">
+                                        <div id="pctSqDesc" class="sr-only">Percentage of square boxes</div>
+                                    </div>
+                                </div>
+                                <div class="input-row">
+                                    <div class="input-group">
+                                        <label for="pctPull" class="tooltip">Pull Box (%)<span class="tooltiptext">Percentage of pull boxes (8x8")</span></label>
+                                        <input type="number" id="pctPull" value="5" min="0" max="100" aria-describedby="pctPullDesc">
+                                        <div id="pctPullDesc" class="sr-only">Percentage of pull boxes (8x8")</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="pctGutter" class="tooltip">Gutter (%)<span class="tooltiptext">Percentage of gutters</span></label>
+                                        <input type="number" id="pctGutter" value="3" min="0" max="100" aria-describedby="pctGutterDesc">
+                                        <div id="pctGutterDesc" class="sr-only">Percentage of gutters</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="pctWire4" class="tooltip">Wireway 4x4" (%)<span class="tooltiptext">Percentage of 4x4 wireways</span></label>
+                                        <input type="number" id="pctWire4" value="7" min="0" max="100" aria-describedby="pctWire4Desc">
+                                        <div id="pctWire4Desc" class="sr-only">Percentage of 4x4 wireways</div>
+                                    </div>
+                                </div>
+                                <div class="input-row">
+                                    <div class="input-group">
+                                        <label for="pctWire6" class="tooltip">Wireway 6x6" (%)<span class="tooltiptext">Percentage of 6x6 wireways</span></label>
+                                        <input type="number" id="pctWire6" value="3" min="0" max="100" aria-describedby="pctWire6Desc">
+                                        <div id="pctWire6Desc" class="sr-only">Percentage of 6x6 wireways</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="pctWire8" class="tooltip">Wireway 8x8" (%)<span class="tooltiptext">Percentage of 8x8 wireways</span></label>
+                                        <input type="number" id="pctWire8" value="2" min="0" max="100" aria-describedby="pctWire8Desc">
+                                        <div id="pctWire8Desc" class="sr-only">Percentage of 8x8 wireways</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>Total Distribution</label>
+                                        <input type="text" id="distributionTotal" value="100%" readonly style="background-color: #f8f9fa;">
+                                    </div>
+                                </div>
+                                <div class="error-message" id="distributionError"></div>
+                            </div>
+
+                            <div class="work-item">
+                                <div class="work-item-title">
+                                    <span>Unit Costs</span>
+                                </div>
+                                <div class="input-row">
+                                    <div class="input-group">
+                                        <label for="costJunc" class="tooltip">Junction Box<span class="tooltiptext">Cost per junction box (4x4")</span></label>
+                                        <input type="number" id="costJunc" value="50" min="0" step="0.01" aria-describedby="costJuncDesc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costJuncDesc" class="sr-only">Cost per junction box (4x4")</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="costUtil" class="tooltip">Utility Box<span class="tooltiptext">Cost per utility box</span></label>
+                                        <input type="number" id="costUtil" value="60" min="0" step="0.01" aria-describedby="costUtilDesc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costUtilDesc" class="sr-only">Cost per utility box</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="costSq" class="tooltip">Square Box<span class="tooltiptext">Cost per square box</span></label>
+                                        <input type="number" id="costSq" value="55" min="0" step="0.01" aria-describedby="costSqDesc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costSqDesc" class="sr-only">Cost per square box</div>
+                                    </div>
+                                </div>
+                                <div class="input-row">
+                                    <div class="input-group">
+                                        <label for="costPull" class="tooltip">Pull Box<span class="tooltiptext">Cost per pull box (8x8")</span></label>
+                                        <input type="number" id="costPull" value="120" min="0" step="0.01" aria-describedby="costPullDesc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costPullDesc" class="sr-only">Cost per pull box (8x8")</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="costGutter" class="tooltip">Gutter<span class="tooltiptext">Cost per gutter</span></label>
+                                        <input type="number" id="costGutter" value="200" min="0" step="0.01" aria-describedby="costGutterDesc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costGutterDesc" class="sr-only">Cost per gutter</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="costNip" class="tooltip">Closed Nipple<span class="tooltiptext">Cost per closed nipple</span></label>
+                                        <input type="number" id="costNip" value="15" min="0" step="0.01" aria-describedby="costNipDesc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costNipDesc" class="sr-only">Cost per closed nipple</div>
+                                    </div>
+                                </div>
+                                <div class="input-row">
+                                    <div class="input-group">
+                                        <label for="costWire4" class="tooltip">Wireway 4x4"<span class="tooltiptext">Cost per 4x4 wireway</span></label>
+                                        <input type="number" id="costWire4" value="150" min="0" step="0.01" aria-describedby="costWire4Desc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costWire4Desc" class="sr-only">Cost per 4x4 wireway</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="costWire6" class="tooltip">Wireway 6x6"<span class="tooltiptext">Cost per 6x6 wireway</span></label>
+                                        <input type="number" id="costWire6" value="250" min="0" step="0.01" aria-describedby="costWire6Desc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costWire6Desc" class="sr-only">Cost per 6x6 wireway</div>
+                                    </div>
+                                    <div class="input-group">
+                                        <label for="costWire8" class="tooltip">Wireway 8x8"<span class="tooltiptext">Cost per 8x8 wireway</span></label>
+                                        <input type="number" id="costWire8" value="350" min="0" step="0.01" aria-describedby="costWire8Desc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costWire8Desc" class="sr-only">Cost per 8x8 wireway</div>
+                                    </div>
+                                </div>
+                                <div class="input-row">
+                                    <div class="input-group">
+                                        <label for="costCover" class="tooltip">Covers<span class="tooltiptext">Cost per cover</span></label>
+                                        <input type="number" id="costCover" value="20" min="0" step="0.01" aria-describedby="costCoverDesc">
+                                        <div class="unit-label currency-unit">PHP</div>
+                                        <div id="costCoverDesc" class="sr-only">Cost per cover</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-content" id="help-tab" role="tabpanel" aria-labelledby="tab-help">
+                            <div class="help-section how-to-use">
+                                <h3>How to Use This Calculator</h3>
+                                <div class="step-guide">
+                                    <p><span class="step-number">1</span> <strong>Project Information:</strong> Enter project details like name, client, location, and date.</p>
+                                    <p><span class="step-number">2</span> <strong>General Parameters:</strong> Set wall area, outlet density, wastage percentage, labor rates, and crew information.</p>
+                                    <p><span class="step-number">3</span> <strong>Box Distribution:</strong> Adjust percentage distribution for different box types (must total 100%).</p>
+                                    <p><span class="step-number">4</span> <strong>Unit Costs:</strong> Set individual costs for each box type and accessories.</p>
+                                    <p><span class="step-number">5</span> <strong>Calculate:</strong> Click "Calculate" to generate the cost breakdown and labor requirements.</p>
+                                    <p><span class="step-number">6</span> <strong>Export:</strong> Export results as PDF or Excel for professional use.</p>
+                                </div>
+                            </div>
+
+                            <div class="help-section calculation-formulas">
+                                <h3>Calculation Formulas</h3>
+                                <div class="formula-box">
+                                    <h4>Quantity Calculations:</h4>
+                                    <p><strong>Total Gangs</strong> = Wall Area × Outlets per m²</p>
+                                    <p><strong>Box Quantities</strong> = Total Gangs × Distribution % × (1 + Wastage %)</p>
+                                    <p><strong>Covers</strong> = Total Gangs × (1 + Wastage %)</p>
+                                    <h4>Cost Calculations:</h4>
+                                    <p><strong>Material Cost</strong> = Quantity × Unit Cost</p>
+                                    <p><strong>Labor Hours</strong> = Total Gangs ÷ (Productivity × Crew Size)</p>
+                                    <p><strong>Labor Cost</strong> = Labor Hours × Labor Rate</p>
+                                    <h4>Final Pricing:</h4>
+                                    <p><strong>Overhead Cost</strong> = Total Direct Cost × Overhead Rate</p>
+                                    <p><strong>Profit</strong> = (Direct Cost + Overhead) × Profit Margin Rate</p>
+                                    <p><strong>Final Price</strong> = Direct Cost + Overhead + Profit</p>
+                                </div>
+                            </div>
+
+                            <div class="help-section standard-sizes">
+                                <h3>Standard Box Types & Applications</h3>
+                                <div class="reference-box">
+                                    <h4>Common Electrical Box Types:</h4>
+                                    <ul>
+                                        <li><strong>Junction Box (4x4"):</strong> For wire connections and splices, typically surface-mounted</li>
+                                        <li><strong>Utility Box:</strong> General purpose boxes for switches and outlets</li>
+                                        <li><strong>Square Box:</strong> Deep boxes for multiple gang installations</li>
+                                        <li><strong>Pull Box (8x8"):</strong> Large boxes for wire pulling and access points</li>
+                                        <li><strong>Gutter:</strong> Wireways for running multiple circuits</li>
+                                        <li><strong>Wireways (4x4", 6x6", 8x8"):</strong> Various sizes for different capacity needs</li>
+                                    </ul>
+                                    <h4>NEC 2023 Compliance Notes:</h4>
+                                    <ul>
+                                        <li>All boxes must be sized according to conductor fill requirements</li>
+                                        <li>Junction boxes must remain accessible after installation</li>
+                                        <li>Boxes in wet locations require weatherproof covers</li>
+                                        <li>Follow local amendments to NEC requirements</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="validation-error" id="validationError">
+                            Please check your inputs. Some values are missing or invalid.
+                        </div>
+
+                        <button class="btn btn-primary" id="calculateBtn" style="width: 100%; padding: 12px; margin-top: 20px;" aria-describedby="calculateDesc">
+                            Calculate Estimate
+                        </button>
+                        <div id="calculateDesc" class="sr-only">Calculate the estimate based on your inputs</div>
+                    </div>
+                </div>
+
+                <div class="output-section">
+                    <h2 class="section-title">Estimate Results</h2>
+
+                    <div id="resultsPlaceholder">
+                        <p>Enter your project details and click "Calculate" to see results.</p>
+                    </div>
+
+                    <div id="resultsContent" class="hidden" aria-live="polite">
+                        <h3>Project: <span id="resultProjectName"></span></h3>
+                        <p><strong>Client:</strong> <span id="resultClientName"></span></p>
+                        <p><strong>Location:</strong> <span id="resultProjectLocation"></span></p>
+                        <p><strong>Prepared By:</strong> <span id="resultPreparedBy"></span></p>
+                        <p><strong>Date:</strong> <span id="resultProjectDate"></span></p>
+
+                        <h4 style="margin-top: 20px;">Bill of Quantity</h4>
+                        <table class="bill-of-quantity-table" id="billOfQuantityTable" aria-describedby="billOfQuantityDesc">
+                            <caption class="sr-only" id="billOfQuantityDesc">Detailed breakdown of all boxes, quantities, and costs</caption>
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Item No.</th>
+                                    <th>Scope of Work</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-center">Unit</th>
+                                    <th class="text-right">Material Cost</th>
+                                    <th class="text-right">Labor Hours</th>
+                                    <th class="text-right">Labor Cost</th>
+                                    <th class="text-right">Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billOfQuantityTableBody"></tbody>
+                        </table>
+
+                        <h4 style="margin-top: 20px;">Indirect Costs & Markup</h4>
+                        <table class="bill-of-quantity-table" aria-describedby="indirectCostsDesc">
+                            <caption class="sr-only" id="indirectCostsDesc">Breakdown of overhead costs and profit margin</caption>
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Item No.</th>
+                                    <th>Scope of Work</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-center">Unit</th>
+                                    <th class="text-right">Material Cost</th>
+                                    <th class="text-right">Labor Hours</th>
+                                    <th class="text-right">Labor Cost</th>
+                                    <th class="text-right">Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="indirectCostsTableBody"></tbody>
+                        </table>
+
+                        <h4 style="margin-top: 20px;">Summary</h4>
+                        <table class="bill-of-quantity-table" aria-describedby="summaryDesc">
+                            <caption class="sr-only" id="summaryDesc">Total cost summary including direct costs, indirect costs, and final price</caption>
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-right">Material Cost</th>
+                                    <th class="text-right">Labor Hours</th>
+                                    <th class="text-right">Labor Cost</th>
+                                    <th class="text-right">Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summaryTableBody"></tbody>
+                        </table>
+
+                        <div id="crewSizingSection" class="crew-sizing hidden" aria-live="polite"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <footer>
-        <p>© 2025 AestimareDesign • Built with <a href="https://x.ai" target="_blank">xAI Grok</a> • <a href="https://github.com/yourusername/electrical-box-estimator" target="_blank">View on GitHub</a></p>
-    </footer>
-
     <script>
-        let results = {};
+        // Global variables
+        let projectData = {};
+        const PHP_TO_USD = 0.018;
+        const USD_TO_EUR = 0.85;
+        const USD_TO_JPY = 110;
 
-        function calculate() {
-            const wallArea = parseFloat(document.getElementById('wallArea').value) || 0;
-            const density = parseFloat(document.getElementById('density').value) || 0;
-            const wastage = (parseFloat(document.getElementById('wastage').value) || 0) / 100;
+        // DOM elements
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const validationError = document.getElementById('validationError');
+        const resultsPlaceholder = document.getElementById('resultsPlaceholder');
+        const resultsContent = document.getElementById('resultsContent');
+        const crewSizingSection = document.getElementById('crewSizingSection');
+
+        // Distribution percentage inputs
+        const distributionInputs = [
+            'pctJunc', 'pctUtil', 'pctSq', 'pctPull', 'pctGutter', 
+            'pctWire4', 'pctWire6', 'pctWire8'
+        ];
+
+        // Initialize date to today
+        document.getElementById('projectDate').valueAsDate = new Date();
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded - initializing calculator');
+            
+            // Tab navigation
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    tabs.forEach(t => {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    });
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    this.setAttribute('aria-selected', 'true');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+                
+                // Add keyboard navigation for tabs
+                tab.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+
+            // Calculate button
+            calculateBtn.addEventListener('click', function() {
+                console.log('Calculate button clicked');
+                calculateEstimate();
+            });
+
+            // Reset button
+            resetBtn.addEventListener('click', resetCalculator);
+
+            // Export buttons
+            exportPdfBtn.addEventListener('click', exportToPdf);
+            exportExcelBtn.addEventListener('click', exportToExcel);
+
+            // Distribution percentage change listeners
+            distributionInputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', updateDistributionTotal);
+            });
+
+            // Input validation and currency update
+            setupInputValidation();
+            document.getElementById('currency').addEventListener('change', updateCurrency);
+            updateCurrency();
+            
+            // Initialize distribution total
+            updateDistributionTotal();
+            
+            console.log('Calculator initialized successfully');
+        });
+
+        // Utility functions
+        function safeNumber(v, fallback = 0) {
+            if (v === "" || v === null || v === undefined) return fallback;
+            const n = Number(v);
+            return isNaN(n) ? fallback : n;
+        }
+
+        function formatNumber(num, dp = 2) {
+            if (typeof num !== 'number' || isNaN(num)) return "0.00";
+            const rounded = Math.round((num + Number.EPSILON) * Math.pow(10, dp)) / Math.pow(10, dp);
+            return rounded.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
+        }
+
+        function formatCurrency(n) {
+            if (typeof n !== 'number' || isNaN(n)) return "PHP 0.00";
+            const c = document.getElementById('currency').value;
+            let symbol = '';
+            switch (c) {
+                case 'PHP': symbol = 'PHP'; break;
+                case 'USD': symbol = '$'; break;
+                case 'EUR': symbol = '€'; break;
+                case 'JPY': symbol = '¥'; break;
+                default: symbol = c + ' ';
+            }
+            return symbol + ' ' + formatNumber(n, 2);
+        }
+
+        function updateCurrency() {
+            const currency = document.getElementById('currency').value;
+            const laborRateInput = document.getElementById('laborRate');
+            const currencyUnitLabels = document.querySelectorAll('.currency-unit');
+
+            if (currency === 'PHP') {
+                laborRateInput.value = 250;
+                currencyUnitLabels.forEach(label => label.textContent = 'PHP');
+            } else {
+                laborRateInput.value = 45;
+                currencyUnitLabels.forEach(label => label.textContent = currency);
+            }
+        }
+
+        function convertCurrency(amount, fromCurrency, toCurrency) {
+            if (fromCurrency === toCurrency) return amount;
+            
+            let usdAmount = amount;
+            if (fromCurrency === 'PHP') usdAmount = amount * PHP_TO_USD;
+            else if (fromCurrency === 'EUR') usdAmount = amount / USD_TO_EUR;
+            else if (fromCurrency === 'JPY') usdAmount = amount / USD_TO_JPY;
+            
+            if (toCurrency === 'PHP') return usdAmount / PHP_TO_USD;
+            else if (toCurrency === 'EUR') return usdAmount * USD_TO_EUR;
+            else if (toCurrency === 'JPY') return usdAmount * USD_TO_JPY;
+            else return usdAmount;
+        }
+
+        function updateDistributionTotal() {
+            const total = distributionInputs.reduce((sum, id) => {
+                return sum + (parseFloat(document.getElementById(id).value) || 0);
+            }, 0);
+            
+            document.getElementById('distributionTotal').value = `${total}%`;
+            
+            const errorDiv = document.getElementById('distributionError');
+            if (Math.abs(total - 100) > 0.1) {
+                errorDiv.textContent = `Distribution percentages total ${total}% (should be 100%)`;
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        function setupInputValidation() {
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            numberInputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    validateInput(this);
+                });
+                input.addEventListener('input', function() {
+                    if (this.classList.contains('input-error')) {
+                        this.classList.remove('input-error');
+                        const errorElement = this.nextElementSibling;
+                        if (errorElement && errorElement.classList.contains('error-message')) {
+                            errorElement.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        }
+
+        function validateInput(input) {
+            let isValid = true;
+            let errorMessage = '';
+
+            if (!input.value || isNaN(parseFloat(input.value))) {
+                isValid = false;
+                errorMessage = 'This field is required and must be a number';
+            } else if (input.hasAttribute('min') && parseFloat(input.value) < parseFloat(input.getAttribute('min'))) {
+                isValid = false;
+                errorMessage = `Value must be at least ${input.getAttribute('min')}`;
+            } else if (input.hasAttribute('max') && parseFloat(input.value) > parseFloat(input.getAttribute('max'))) {
+                isValid = false;
+                errorMessage = `Value must be at most ${input.getAttribute('max')}`;
+            } else if (parseFloat(input.value) < 0) {
+                isValid = false;
+                errorMessage = 'Value cannot be negative';
+            }
+
+            if (!isValid) {
+                input.classList.add('input-error');
+                let errorElement = input.nextElementSibling;
+                if (errorElement && errorElement.classList.contains('error-message')) {
+                    errorElement.textContent = errorMessage;
+                    errorElement.style.display = 'block';
+                }
+            } else {
+                input.classList.remove('input-error');
+                let errorElement = input.nextElementSibling;
+                if (errorElement && errorElement.classList.contains('error-message')) {
+                    errorElement.style.display = 'none';
+                }
+            }
+
+            return isValid;
+        }
+
+        function validateInputs() {
+            let isValid = true;
+            
+            const projectName = document.getElementById('projectName');
+            if (!projectName.value.trim()) {
+                projectName.classList.add('input-error');
+                document.getElementById('projectNameError').style.display = 'block';
+                isValid = false;
+            } else {
+                projectName.classList.remove('input-error');
+                document.getElementById('projectNameError').style.display = 'none';
+            }
+
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            numberInputs.forEach(input => {
+                if (!validateInput(input)) {
+                    isValid = false;
+                }
+            });
+
+            // Check distribution percentages
+            updateDistributionTotal();
+            const totalPct = parseFloat(document.getElementById('distributionTotal').value);
+            if (Math.abs(totalPct - 100) > 0.1) {
+                document.getElementById('distributionError').style.display = 'block';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function calculateEstimate() {
+            console.log('Starting calculation...');
+            if (!validateInputs()) {
+                console.log('Validation failed');
+                return;
+            }
+
+            const wallArea = safeNumber(document.getElementById('wallArea').value);
+            const density = safeNumber(document.getElementById('density').value);
+            const wastage = safeNumber(document.getElementById('wastage').value) / 100;
             const totalGangs = Math.ceil(wallArea * density);
-            const crewSize = parseInt(document.getElementById('crewSize').value) || 1;
-            const dailyWage = parseFloat(document.getElementById('dailyWage').value) || 0;
-            const prodRate = parseFloat(document.getElementById('prodRate').value) || 1;
+            
+            const laborRate = safeNumber(document.getElementById('laborRate').value, 250);
+            const overheadRate = safeNumber(document.getElementById('overheadRate').value, 15) / 100;
+            const profitMarginRate = safeNumber(document.getElementById('profitMarginRate').value, 20) / 100;
+            const currency = document.getElementById('currency').value;
+            const crewSize = safeNumber(document.getElementById('crewSize').value, 3);
+            const prodRate = safeNumber(document.getElementById('prodRate').value, 2);
 
-            const juncQty = Math.ceil(totalGangs * 0.4 * (1 + wastage));
-            const utilQty = Math.ceil(totalGangs * 0.3 * (1 + wastage));
-            const sqQty = Math.ceil(totalGangs * 0.2 * (1 + wastage));
-            const pullQty = Math.ceil(totalGangs * 0.05 * (1 + wastage));
-            const gutterQty = Math.ceil(totalGangs * 0.03 * (1 + wastage));
-            const nipQty = Math.ceil(totalGangs * 0.1 * (1 + wastage));
-            const wire4Qty = Math.ceil(totalGangs * 0.02 * (1 + wastage));
-            const wire6Qty = Math.ceil(totalGangs * 0.01 * (1 + wastage));
-            const wire8Qty = Math.ceil(totalGangs * 0.005 * (1 + wastage));
-            const coverQty = Math.ceil(totalGangs * 1.1);
+            // Get distribution percentages
+            const distributions = {
+                junc: safeNumber(document.getElementById('pctJunc').value) / 100,
+                util: safeNumber(document.getElementById('pctUtil').value) / 100,
+                sq: safeNumber(document.getElementById('pctSq').value) / 100,
+                pull: safeNumber(document.getElementById('pctPull').value) / 100,
+                gutter: safeNumber(document.getElementById('pctGutter').value) / 100,
+                wire4: safeNumber(document.getElementById('pctWire4').value) / 100,
+                wire6: safeNumber(document.getElementById('pctWire6').value) / 100,
+                wire8: safeNumber(document.getElementById('pctWire8').value) / 100
+            };
 
+            // Get unit costs
             const costs = {
-                junc: parseFloat(document.getElementById('costJunc').value),
-                util: parseFloat(document.getElementById('costUtil').value),
-                sq: parseFloat(document.getElementById('costSq').value),
-                pull: parseFloat(document.getElementById('costPull').value),
-                gutter: parseFloat(document.getElementById('costGutter').value),
-                nip: parseFloat(document.getElementById('costNip').value),
-                wire4: parseFloat(document.getElementById('costWire4').value),
-                wire6: parseFloat(document.getElementById('costWire6').value),
-                wire8: parseFloat(document.getElementById('costWire8').value),
-                cover: parseFloat(document.getElementById('costCover').value)
+                junc: safeNumber(document.getElementById('costJunc').value),
+                util: safeNumber(document.getElementById('costUtil').value),
+                sq: safeNumber(document.getElementById('costSq').value),
+                pull: safeNumber(document.getElementById('costPull').value),
+                gutter: safeNumber(document.getElementById('costGutter').value),
+                nip: safeNumber(document.getElementById('costNip').value),
+                wire4: safeNumber(document.getElementById('costWire4').value),
+                wire6: safeNumber(document.getElementById('costWire6').value),
+                wire8: safeNumber(document.getElementById('costWire8').value),
+                cover: safeNumber(document.getElementById('costCover').value)
             };
 
-            const matCosts = {
-                junc: juncQty * costs.junc,
-                util: utilQty * costs.util,
-                sq: sqQty * costs.sq,
-                pull: pullQty * costs.pull,
-                gutter: gutterQty * costs.gutter,
-                nip: nipQty * costs.nip,
-                wire4: wire4Qty * costs.wire4,
-                wire6: wire6Qty * costs.wire6,
-                wire8: wire8Qty * costs.wire8,
-                cover: coverQty * costs.cover
+            // Calculate quantities
+            const quantities = {
+                junc: Math.ceil(totalGangs * distributions.junc * (1 + wastage)),
+                util: Math.ceil(totalGangs * distributions.util * (1 + wastage)),
+                sq: Math.ceil(totalGangs * distributions.sq * (1 + wastage)),
+                pull: Math.ceil(totalGangs * distributions.pull * (1 + wastage)),
+                gutter: Math.ceil(totalGangs * distributions.gutter * (1 + wastage)),
+                nip: Math.ceil(totalGangs * 0.1 * (1 + wastage)), // 10% of gangs
+                wire4: Math.ceil(totalGangs * distributions.wire4 * (1 + wastage)),
+                wire6: Math.ceil(totalGangs * distributions.wire6 * (1 + wastage)),
+                wire8: Math.ceil(totalGangs * distributions.wire8 * (1 + wastage)),
+                cover: Math.ceil(totalGangs * (1 + wastage)) // One cover per gang
             };
+
+            // Calculate material costs
+            const matCosts = {
+                junc: quantities.junc * costs.junc,
+                util: quantities.util * costs.util,
+                sq: quantities.sq * costs.sq,
+                pull: quantities.pull * costs.pull,
+                gutter: quantities.gutter * costs.gutter,
+                nip: quantities.nip * costs.nip,
+                wire4: quantities.wire4 * costs.wire4,
+                wire6: quantities.wire6 * costs.wire6,
+                wire8: quantities.wire8 * costs.wire8,
+                cover: quantities.cover * costs.cover
+            };
+
             const totalMatCost = Object.values(matCosts).reduce((a, b) => a + b, 0);
 
+            // Calculate labor
             const totalHours = totalGangs / (prodRate * crewSize);
             const totalDays = totalHours / 8;
-            const laborCost = totalDays * crewSize * dailyWage;
+            const laborCost = totalDays * crewSize * laborRate;
 
-            results = { totalGangs, totalMatCost, laborCost, quantities: { juncQty, utilQty, sqQty, pullQty, gutterQty, nipQty, wire4Qty, wire6Qty, wire8Qty, coverQty }, matCosts, totalHours, totalDays };
+            const totalDirectCost = totalMatCost + laborCost;
+            const overheadCost = totalDirectCost * overheadRate;
+            const costBeforeProfit = totalDirectCost + overheadCost;
+            const profit = costBeforeProfit * profitMarginRate;
+            const finalPrice = costBeforeProfit + profit;
 
-            // Render tables
-            let matHTML = '<h3>Materials</h3><table><tr><th>Item</th><th>Qty</th><th>Cost</th><th>Total</th></tr>';
-            Object.keys(matCosts).forEach(key => {
-                const item = key === 'junc' ? 'Junction Box' : key === 'util' ? 'Utility Box' : key === 'sq' ? 'Square Box' : key === 'pull' ? 'Pull Box' : key === 'gutter' ? 'Gutter' : key === 'nip' ? 'Closed Nipple' : key === 'wire4' ? 'Wireway 4x4"' : key === 'wire6' ? 'Wireway 6x6"' : key === 'wire8' ? 'Wireway 8x8"' : 'Covers';
-                const qty = results.quantities[key + 'Qty'];
-                matHTML += `<tr><td>${item}</td><td>${qty}</td><td>₱${costs[key]}</td><td>₱${matCosts[key].toFixed(2)}</td></tr>`;
+            projectData = {
+                projectName: document.getElementById('projectName').value || 'Unnamed Project',
+                clientName: document.getElementById('clientName').value,
+                projectLocation: document.getElementById('projectLocation').value,
+                preparedBy: document.getElementById('preparedBy').value,
+                projectDate: document.getElementById('projectDate').value,
+                timestamp: new Date().toISOString(),
+                currency: currency,
+                parameters: {
+                    wallArea,
+                    density,
+                    wastage: wastage * 100,
+                    totalGangs,
+                    laborRate,
+                    overheadRate: overheadRate * 100,
+                    profitMarginRate: profitMarginRate * 100,
+                    crewSize,
+                    prodRate
+                },
+                quantities,
+                costs,
+                distributions,
+                totals: {
+                    totalMatCost,
+                    totalHours,
+                    totalDays,
+                    laborCost,
+                    totalDirectCost,
+                    overheadCost,
+                    profit,
+                    finalPrice
+                }
+            };
+
+            console.log('Calculation completed successfully', projectData);
+            displayResults();
+        }
+
+        function displayResults() {
+            console.log('Displaying results...');
+            
+            document.getElementById('resultProjectName').textContent = projectData.projectName;
+            document.getElementById('resultClientName').textContent = projectData.clientName || 'Not specified';
+            document.getElementById('resultProjectLocation').textContent = projectData.projectLocation || 'Not specified';
+            document.getElementById('resultPreparedBy').textContent = projectData.preparedBy || 'Not specified';
+            document.getElementById('resultProjectDate').textContent = projectData.projectDate || 'Not specified';
+
+            const billOfQuantityTableBody = document.getElementById('billOfQuantityTableBody');
+            billOfQuantityTableBody.innerHTML = "";
+            let itemNo = 1;
+
+            // Box items
+            const boxItems = [
+                { key: 'junc', name: 'Junction Box (4x4")', unit: 'pcs' },
+                { key: 'util', name: 'Utility Box', unit: 'pcs' },
+                { key: 'sq', name: 'Square Box', unit: 'pcs' },
+                { key: 'pull', name: 'Pull Box (8x8")', unit: 'pcs' },
+                { key: 'gutter', name: 'Gutter', unit: 'pcs' },
+                { key: 'nip', name: 'Closed Nipple', unit: 'pcs' },
+                { key: 'wire4', name: 'Wireway 4x4"', unit: 'pcs' },
+                { key: 'wire6', name: 'Wireway 6x6"', unit: 'pcs' },
+                { key: 'wire8', name: 'Wireway 8x8"', unit: 'pcs' },
+                { key: 'cover', name: 'Covers', unit: 'pcs' }
+            ];
+
+            boxItems.forEach(item => {
+                if (projectData.quantities[item.key] > 0) {
+                    const materialCost = projectData.quantities[item.key] * projectData.costs[item.key];
+                    const laborHours = 0; // Labor is calculated per gang, not per item
+                    const laborCost = 0;
+                    const totalCost = materialCost;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="text-center">${itemNo++}</td>
+                        <td>${item.name}</td>
+                        <td class="text-center">${formatNumber(projectData.quantities[item.key])}</td>
+                        <td class="text-center">${item.unit}</td>
+                        <td class="text-right">${formatCurrency(materialCost)}</td>
+                        <td class="text-right">${formatNumber(laborHours, 1)}</td>
+                        <td class="text-right">${formatCurrency(laborCost)}</td>
+                        <td class="text-right">${formatCurrency(totalCost)}</td>
+                    `;
+                    billOfQuantityTableBody.appendChild(row);
+                }
             });
-            matHTML += `<tr class="total"><td colspan="3">Total Materials</td><td>₱${totalMatCost.toFixed(2)}</td></tr></table>`;
-            document.getElementById('materialsTable').innerHTML = matHTML;
 
-            document.getElementById('laborTable').innerHTML = `
-                <h3>Labor</h3><table>
-                <tr><td>Total Gangs</td><td>${totalGangs}</td></tr>
-                <tr><td>Man-Hours</td><td>${totalHours.toFixed(1)}</td></tr>
-                <tr><td>Duration</td><td>${totalDays.toFixed(1)} days</td></tr>
-                <tr><td>Labor Cost</td><td>₱${laborCost.toFixed(2)}</td></tr>
-                </table>`;
-
-            const grand = totalMatCost + laborCost;
-            document.getElementById('summary').innerHTML = `
-                <h3 style="color:var(--success);">Grand Total: ₱${grand.toFixed(2)}</h3>
-                <p>With 10% Contingency: <strong>₱${(grand * 1.1).toFixed(2)}</strong></p>
+            // Installation labor
+            const laborRow = document.createElement('tr');
+            laborRow.innerHTML = `
+                <td class="text-center">${itemNo++}</td>
+                <td>Box Installation Labor</td>
+                <td class="text-center">${formatNumber(projectData.parameters.totalGangs)}</td>
+                <td class="text-center">gangs</td>
+                <td class="text-right">-</td>
+                <td class="text-right">${formatNumber(projectData.totals.totalHours, 1)}</td>
+                <td class="text-right">${formatCurrency(projectData.totals.laborCost)}</td>
+                <td class="text-right">${formatCurrency(projectData.totals.laborCost)}</td>
             `;
+            billOfQuantityTableBody.appendChild(laborRow);
 
-            document.getElementById('inputs').classList.remove('active');
-            document.getElementById('results').classList.add('active');
+            const totalDirectRow = document.createElement('tr');
+            totalDirectRow.className = 'total-row';
+            totalDirectRow.innerHTML = `
+                <td class="text-center"></td>
+                <td><strong>TOTAL DIRECT COSTS</strong></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.totalMatCost)}</strong></td>
+                <td class="text-right"><strong>${formatNumber(projectData.totals.totalHours, 1)}</strong></td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.laborCost)}</strong></td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.totalDirectCost)}</strong></td>
+            `;
+            billOfQuantityTableBody.appendChild(totalDirectRow);
+
+            const indirectCostsTableBody = document.getElementById('indirectCostsTableBody');
+            indirectCostsTableBody.innerHTML = "";
+
+            const overheadRow = document.createElement('tr');
+            overheadRow.innerHTML = `
+                <td class="text-center">${itemNo++}</td>
+                <td>Overhead (${projectData.parameters.overheadRate}%)</td>
+                <td class="text-center">1</td>
+                <td class="text-center">lot</td>
+                <td class="text-right">${formatCurrency(projectData.totals.overheadCost)}</td>
+                <td class="text-right">-</td>
+                <td class="text-right">-</td>
+                <td class="text-right">${formatCurrency(projectData.totals.overheadCost)}</td>
+            `;
+            indirectCostsTableBody.appendChild(overheadRow);
+
+            const profitRow = document.createElement('tr');
+            profitRow.innerHTML = `
+                <td class="text-center">${itemNo++}</td>
+                <td>Profit Margin (${projectData.parameters.profitMarginRate}%)</td>
+                <td class="text-center">1</td>
+                <td class="text-center">lot</td>
+                <td class="text-right">${formatCurrency(projectData.totals.profit)}</td>
+                <td class="text-right">-</td>
+                <td class="text-right">-</td>
+                <td class="text-right">${formatCurrency(projectData.totals.profit)}</td>
+            `;
+            indirectCostsTableBody.appendChild(profitRow);
+
+            const totalIndirectRow = document.createElement('tr');
+            totalIndirectRow.className = 'total-row';
+            totalIndirectRow.innerHTML = `
+                <td class="text-center">-</td>
+                <td><strong>TOTAL INDIRECT COSTS & MARKUP</strong></td>
+                <td class="text-center">-</td>
+                <td class="text-center">-</td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.overheadCost + projectData.totals.profit)}</strong></td>
+                <td class="text-right"><strong>-</strong></td>
+                <td class="text-right"><strong>-</strong></td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.overheadCost + projectData.totals.profit)}</strong></td>
+            `;
+            indirectCostsTableBody.appendChild(totalIndirectRow);
+
+            const summaryTableBody = document.getElementById('summaryTableBody');
+            summaryTableBody.innerHTML = '';
+
+            const directRow = document.createElement('tr');
+            directRow.innerHTML = `
+                <td>Total Direct Costs</td>
+                <td class="text-right">${formatCurrency(projectData.totals.totalMatCost)}</td>
+                <td class="text-right">${formatNumber(projectData.totals.totalHours, 1)}</td>
+                <td class="text-right">${formatCurrency(projectData.totals.laborCost)}</td>
+                <td class="text-right">${formatCurrency(projectData.totals.totalDirectCost)}</td>
+            `;
+            summaryTableBody.appendChild(directRow);
+
+            const indirectRow = document.createElement('tr');
+            indirectRow.innerHTML = `
+                <td>Total Indirect Costs & Markup</td>
+                <td class="text-right">${formatCurrency(projectData.totals.overheadCost + projectData.totals.profit)}</td>
+                <td class="text-right"></td>
+                <td class="text-right"></td>
+                <td class="text-right">${formatCurrency(projectData.totals.overheadCost + projectData.totals.profit)}</td>
+            `;
+            summaryTableBody.appendChild(indirectRow);
+
+            const finalRow = document.createElement('tr');
+            finalRow.className = 'total-row';
+            finalRow.innerHTML = `
+                <td><strong>GRAND TOTAL</strong></td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.totalMatCost + projectData.totals.overheadCost + projectData.totals.profit)}</strong></td>
+                <td class="text-right"><strong>${formatNumber(projectData.totals.totalHours, 1)}</strong></td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.laborCost)}</strong></td>
+                <td class="text-right"><strong>${formatCurrency(projectData.totals.finalPrice)}</strong></td>
+            `;
+            summaryTableBody.appendChild(finalRow);
+
+            addCrewSizingSummary();
+
+            resultsPlaceholder.classList.add('hidden');
+            resultsContent.classList.remove('hidden');
+            
+            // Focus on results for screen reader users
+            resultsContent.setAttribute('tabindex', '-1');
+            resultsContent.focus();
+            
+            console.log('Results displayed successfully');
         }
 
-        function backToInputs() {
-            document.getElementById('results').classList.remove('active');
-            document.getElementById('inputs').classList.add('active');
+        function addCrewSizingSummary() {
+            const HOURS_PER_DAY = 8;
+            const DAYS_PER_WEEK = 5;
+            const totalLaborHours = projectData.totals.totalHours;
+            const totalLaborDays = totalLaborHours / HOURS_PER_DAY;
+            const totalWeeks = totalLaborDays / DAYS_PER_WEEK;
+
+            const smallCrew = 2;
+            const mediumCrew = 4;
+            const largeCrew = 6;
+
+            const smallCrewDays = totalLaborDays / smallCrew;
+            const mediumCrewDays = totalLaborDays / mediumCrew;
+            const largeCrewDays = totalLaborDays / largeCrew;
+
+            const smallCrewWeeks = smallCrewDays / DAYS_PER_WEEK;
+            const mediumCrewWeeks = mediumCrewDays / DAYS_PER_WEEK;
+            const largeCrewWeeks = largeCrewDays / DAYS_PER_WEEK;
+
+            crewSizingSection.innerHTML = `
+                <h4 style="margin-bottom: 15px;">Labor & Crew Planning</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div class="cost-card">
+                        <div>Total Gangs/Outlets</div>
+                        <div class="cost-value">${formatNumber(projectData.parameters.totalGangs)}</div>
+                        <div>gangs</div>
+                    </div>
+                    <div class="cost-card">
+                        <div>Total Labor Hours</div>
+                        <div class="cost-value">${formatNumber(totalLaborHours, 1)}</div>
+                        <div>hours</div>
+                    </div>
+                    <div class="cost-card">
+                        <div>Total Labor Cost</div>
+                        <div class="cost-value">${formatCurrency(projectData.totals.laborCost)}</div>
+                        <div>${projectData.currency}</div>
+                    </div>
+                    <div class="cost-card">
+                        <div>Equivalent Work Days</div>
+                        <div class="cost-value">${formatNumber(totalLaborDays, 1)}</div>
+                        <div>days (8h/day)</div>
+                    </div>
+                </div>
+                <h5 style="margin-bottom: 10px;">Recommended Crew Sizes & Timelines:</h5>
+                <div class="crew-options">
+                    <div class="crew-option">
+                        <div style="font-weight: bold; color: var(--success);">Small Crew</div>
+                        <div style="font-size: 1.2rem; font-weight: bold; margin: 8px 0;">${smallCrew} workers</div>
+                        <div>${formatNumber(smallCrewDays, 1)} days</div>
+                        <div>${formatNumber(smallCrewWeeks, 1)} weeks</div>
+                    </div>
+                    <div class="crew-option">
+                        <div style="font-weight: bold; color: var(--warning);">Medium Crew</div>
+                        <div style="font-size: 1.2rem; font-weight: bold; margin: 8px 0;">${mediumCrew} workers</div>
+                        <div>${formatNumber(mediumCrewDays, 1)} days</div>
+                        <div>${formatNumber(mediumCrewWeeks, 1)} weeks</div>
+                    </div>
+                    <div class="crew-option">
+                        <div style="font-weight: bold; color: var(--danger);">Large Crew</div>
+                        <div style="font-size: 1.2rem; font-weight: bold; margin: 8px 0;">${largeCrew} workers</div>
+                        <div>${formatNumber(largeCrewDays, 1)} days</div>
+                        <div>${formatNumber(largeCrewWeeks, 1)} weeks</div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; font-size: 0.9rem; color: var(--text-medium);">
+                    <strong>Note:</strong> Based on ${HOURS_PER_DAY} hours per day, ${DAYS_PER_WEEK} days per week.
+                    Current productivity: ${projectData.parameters.prodRate} gangs/man-hour with ${projectData.parameters.crewSize} workers.
+                </div>
+            `;
+            crewSizingSection.classList.remove("hidden");
         }
 
-        function exportPDF() {
-            if (!results.totalGangs) return alert('Calculate first!');
+        function resetCalculator() {
+            if (confirm('Are you sure you want to reset all inputs? This cannot be undone.')) {
+                document.getElementById('projectName').value = 'Fit-Out Project';
+                document.getElementById('clientName').value = '';
+                document.getElementById('projectLocation').value = '';
+                document.getElementById('preparedBy').value = '';
+                document.getElementById('projectDate').valueAsDate = new Date();
+                
+                document.getElementById('wallArea').value = '100';
+                document.getElementById('density').value = '0.5';
+                document.getElementById('wastage').value = '7';
+                document.getElementById('laborRate').value = '250';
+                document.getElementById('overheadRate').value = '15';
+                document.getElementById('profitMarginRate').value = '20';
+                document.getElementById('currency').value = 'PHP';
+                document.getElementById('crewSize').value = '3';
+                document.getElementById('prodRate').value = '2';
+                
+                // Reset distribution percentages
+                document.getElementById('pctJunc').value = '35';
+                document.getElementById('pctUtil').value = '25';
+                document.getElementById('pctSq').value = '20';
+                document.getElementById('pctPull').value = '5';
+                document.getElementById('pctGutter').value = '3';
+                document.getElementById('pctWire4').value = '7';
+                document.getElementById('pctWire6').value = '3';
+                document.getElementById('pctWire8').value = '2';
+                
+                // Reset unit costs
+                document.getElementById('costJunc').value = '50';
+                document.getElementById('costUtil').value = '60';
+                document.getElementById('costSq').value = '55';
+                document.getElementById('costPull').value = '120';
+                document.getElementById('costGutter').value = '200';
+                document.getElementById('costNip').value = '15';
+                document.getElementById('costWire4').value = '150';
+                document.getElementById('costWire6').value = '250';
+                document.getElementById('costWire8').value = '350';
+                document.getElementById('costCover').value = '20';
+                
+                resultsPlaceholder.classList.remove('hidden');
+                resultsContent.classList.add('hidden');
+                crewSizingSection.classList.add('hidden');
+                validationError.style.display = 'none';
+                
+                document.querySelectorAll('.input-error').forEach(el => {
+                    el.classList.remove('input-error');
+                });
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                updateDistributionTotal();
+                updateCurrency();
+                
+                // Focus on project name field after reset
+                document.getElementById('projectName').focus();
+            }
+        }
+
+        // PDF Export Functions
+        function getSelectedCurrency() {
+            const el = document.getElementById('currency');
+            return el ? el.value : 'PHP';
+        }
+
+        function getPdfCurrencyPrefix(code) {
+            switch (code) {
+                case 'PHP': return 'PHP ';
+                case 'USD': return '$';
+                case 'EUR': return '€';
+                case 'JPY': return '¥';
+                default:    return code + ' ';
+            }
+        }
+
+        function formatNumberForPDF(num, decimals = 2) {
+            if (typeof num !== 'number' || isNaN(num)) return '0';
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        function formatCurrencyForPDF(n) {
+            if (typeof n !== 'number' || isNaN(n)) return '0.00';
+            const prefix = getPdfCurrencyPrefix(getSelectedCurrency());
+            return `${prefix}${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function exportToPdf() {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFontSize(16);
-            doc.text(document.getElementById('projectName').value, 20, 20);
-            doc.setFontSize(12);
-            doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 30);
-            doc.text('See full estimate in browser.', 20, 50);
-            doc.text(`Total: ₱${(results.totalMatCost + results.laborCost).toFixed(2)}`, 20, 60);
-            doc.save(`${document.getElementById('projectName').value.replace(/\s/g, '_')}_Estimate.pdf`);
+            if (!projectData?.totals) {
+                alert('No results to export. Please calculate an estimate first.');
+                return;
+            }
+
+            try {
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+                const pageWidth  = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+
+                // Reserved areas
+                const HEADER_H = 65;
+                const FOOTER_H = 30;
+                const CONTENT_MARGIN_L = 35;
+                const CONTENT_MARGIN_R = 35;
+
+                // Common styles
+                const BRAND = { r:44, g:62, b:80 }; // #2c3e50
+                doc.setFont('helvetica', 'normal');
+
+                // Header/ Footer drawer (runs on every page)
+                function drawHeaderFooter(data) {
+                    // Header bar
+                    doc.setFillColor(240,240,240);
+                    doc.rect(0, 0, pageWidth, HEADER_H, 'F');
+
+                    // Title
+                    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(BRAND.r,BRAND.g,BRAND.b);
+                    doc.text('ELECTRICAL BOXES & COVERS ESTIMATE', pageWidth/2, 24, { align: 'center' });
+
+                    // Meta
+                    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(0);
+                    const projectName = document.getElementById('projectName').value || 'Unnamed Project';
+                    const clientName  = document.getElementById('clientName').value || 'Not specified';
+                    const preparedBy  = document.getElementById('preparedBy').value || 'Not specified';
+                    const dateStr     = document.getElementById('projectDate').value || '';
+
+                    doc.text(`Project: ${projectName}`, CONTENT_MARGIN_L, 40);
+                    doc.text(`Client: ${clientName}`,  CONTENT_MARGIN_L, 52);
+                    doc.text(`Prepared By: ${preparedBy}`, pageWidth - CONTENT_MARGIN_R, 40, { align:'right' });
+                    doc.text(`Date: ${dateStr}`,         pageWidth - CONTENT_MARGIN_R, 52, { align:'right' });
+
+                    // Header rule
+                    doc.setDrawColor(BRAND.r,BRAND.g,BRAND.b); doc.setLineWidth(0.5);
+                    doc.line(CONTENT_MARGIN_L, HEADER_H-6, pageWidth - CONTENT_MARGIN_R, HEADER_H-6);
+
+                    // Footer
+                    const pageNumber = doc.internal.getNumberOfPages();
+                    doc.setFontSize(8); doc.setTextColor(100);
+                    doc.text(`Page ${pageNumber}`, pageWidth/2, pageHeight - 12, { align:'center' });
+                    doc.text(`Generated: ${new Date().toLocaleDateString()}`, CONTENT_MARGIN_L, pageHeight - 12);
+                    doc.text(`Total Gangs: ${projectData.parameters.totalGangs}`, pageWidth - CONTENT_MARGIN_R, pageHeight - 12, { align:'right' });
+                }
+
+                // Common AutoTable options
+                const TABLE_OPTS = {
+                    margin: { left: CONTENT_MARGIN_L, right: CONTENT_MARGIN_R, top: HEADER_H + 6, bottom: FOOTER_H + 6 },
+                    styles: {
+                        font: 'helvetica',
+                        fontSize: 7,
+                        cellPadding: 2.5,
+                        lineWidth: 0.25,
+                        lineColor: 100,
+                        overflow: 'linebreak',
+                        valign: 'middle'
+                    },
+                    headStyles: {
+                        fillColor: [BRAND.r, BRAND.g, BRAND.b],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                        fontSize: 7
+                    },
+                    alternateRowStyles: { fillColor: [245,245,245] },
+                    didDrawPage: drawHeaderFooter
+                };
+
+                // Section helper
+                function sectionTitle(text) {
+                    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(BRAND.r,BRAND.g,BRAND.b);
+                    const y = (doc.lastAutoTable?.finalY || (HEADER_H + 12)) + 12;
+                    doc.text(text, CONTENT_MARGIN_L, y);
+                    return y + 4;
+                }
+
+                // Column widths (total: 22+135+40+28+70+50+70+80 = 495pt)
+                const w = {
+                    itemNo: 22,
+                    scope: 135,  
+                    qty: 40,
+                    unit: 28,
+                    mat: 70,
+                    hrs: 50,
+                    lab: 70,
+                    tot: 80
+                };
+
+                // ===== Bill of Quantity =====
+                let startY = sectionTitle('BILL OF QUANTITY');
+                const boqHead = [['Item No.','Scope of Work','Quantity','Unit','Material Cost','Labor Hours','Labor Cost','Total Cost']];
+                const boqBody = [];
+                let itemNo = 1;
+
+                // Add box items
+                const boxItems = [
+                    { key: 'junc', name: 'Junction Box (4x4")', unit: 'pcs' },
+                    { key: 'util', name: 'Utility Box', unit: 'pcs' },
+                    { key: 'sq', name: 'Square Box', unit: 'pcs' },
+                    { key: 'pull', name: 'Pull Box (8x8")', unit: 'pcs' },
+                    { key: 'gutter', name: 'Gutter', unit: 'pcs' },
+                    { key: 'nip', name: 'Closed Nipple', unit: 'pcs' },
+                    { key: 'wire4', name: 'Wireway 4x4"', unit: 'pcs' },
+                    { key: 'wire6', name: 'Wireway 6x6"', unit: 'pcs' },
+                    { key: 'wire8', name: 'Wireway 8x8"', unit: 'pcs' },
+                    { key: 'cover', name: 'Covers', unit: 'pcs' }
+                ];
+
+                boxItems.forEach(item => {
+                    if (projectData.quantities[item.key] > 0) {
+                        const materialCost = projectData.quantities[item.key] * projectData.costs[item.key];
+                        boqBody.push([
+                            String(itemNo++),
+                            item.name,
+                            formatNumberForPDF(projectData.quantities[item.key]),
+                            item.unit,
+                            formatCurrencyForPDF(materialCost),
+                            '-',
+                            '-',
+                            formatCurrencyForPDF(materialCost)
+                        ]);
+                    }
+                });
+
+                // Add installation labor
+                boqBody.push([
+                    String(itemNo++),
+                    'Box Installation Labor',
+                    formatNumberForPDF(projectData.parameters.totalGangs),
+                    'gangs',
+                    '-',
+                    formatNumberForPDF(projectData.totals.totalHours, 1),
+                    formatCurrencyForPDF(projectData.totals.laborCost),
+                    formatCurrencyForPDF(projectData.totals.laborCost)
+                ]);
+
+                // Add total direct costs row
+                boqBody.push([
+                    '', 'TOTAL DIRECT COSTS', '', '',
+                    formatCurrencyForPDF(projectData.totals.totalMatCost),
+                    formatNumberForPDF(projectData.totals.totalHours, 1),
+                    formatCurrencyForPDF(projectData.totals.laborCost),
+                    formatCurrencyForPDF(projectData.totals.totalDirectCost)
+                ]);
+
+                doc.autoTable({
+                    ...TABLE_OPTS,
+                    startY,
+                    head: boqHead,
+                    body: boqBody,
+                    columnStyles: {
+                        0:{ cellWidth: w.itemNo, halign:'center' },
+                        1:{ cellWidth: w.scope, cellPadding: 2 },
+                        2:{ cellWidth: w.qty, halign:'right' },
+                        3:{ cellWidth: w.unit, halign:'center' },
+                        4:{ cellWidth: w.mat, halign:'right' },
+                        5:{ cellWidth: w.hrs, halign:'right' },
+                        6:{ cellWidth: w.lab, halign:'right' },
+                        7:{ cellWidth: w.tot, halign:'right' }
+                    },
+                    didParseCell(data) {
+                        // Bold last row (TOTAL)
+                        if (data.section === 'body' && data.row.index === boqBody.length - 1) {
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                        // Ensure text fits in scope column
+                        if (data.column.index === 1 && data.cell.raw.length > 50) {
+                            data.cell.styles.fontSize = 6.5;
+                        }
+                    }
+                });
+
+                // ===== Indirect Costs & Markup =====
+                startY = sectionTitle('INDIRECT COSTS & MARKUP');
+                const indirectBody = [];
+                itemNo = 1;
+
+                // Overhead
+                indirectBody.push([
+                    String(itemNo++),
+                    `Overhead (${projectData.parameters.overheadRate}%)`,
+                    '1',
+                    'lot',
+                    formatCurrencyForPDF(projectData.totals.overheadCost),
+                    '-',
+                    '-',
+                    formatCurrencyForPDF(projectData.totals.overheadCost)
+                ]);
+
+                // Profit Margin
+                indirectBody.push([
+                    String(itemNo++),
+                    `Profit Margin (${projectData.parameters.profitMarginRate}%)`,
+                    '1',
+                    'lot',
+                    formatCurrencyForPDF(projectData.totals.profit),
+                    '-',
+                    '-',
+                    formatCurrencyForPDF(projectData.totals.profit)
+                ]);
+
+                // Total Indirect & Markup
+                const totalIndirectMarkup = projectData.totals.overheadCost + projectData.totals.profit;
+                indirectBody.push([
+                    '',
+                    'TOTAL INDIRECT COSTS & MARKUP',
+                    '',
+                    '',
+                    formatCurrencyForPDF(totalIndirectMarkup),
+                    '-',
+                    '-',
+                    formatCurrencyForPDF(totalIndirectMarkup)
+                ]);
+
+                doc.autoTable({
+                    ...TABLE_OPTS,
+                    startY,
+                    head: [['Item No.','Scope of Work','Quantity','Unit','Material Cost','Labor Hours','Labor Cost','Total Cost']],
+                    body: indirectBody,
+                    columnStyles: {
+                        0:{ cellWidth: w.itemNo, halign:'center' },
+                        1:{ cellWidth: w.scope, cellPadding: 2 },
+                        2:{ cellWidth: w.qty, halign:'right' },
+                        3:{ cellWidth: w.unit, halign:'center' },
+                        4:{ cellWidth: w.mat, halign:'right' },
+                        5:{ cellWidth: w.hrs, halign:'right' },
+                        6:{ cellWidth: w.lab, halign:'right' },
+                        7:{ cellWidth: w.tot, halign:'right' }
+                    },
+                    didParseCell(data) {
+                        if (data.section === 'body' && data.row.index === indirectBody.length - 1) {
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                });
+
+                // ===== Summary =====
+                startY = sectionTitle('SUMMARY');
+                const summaryBody = [
+                    [
+                        'TOTAL DIRECT COSTS',
+                        formatCurrencyForPDF(projectData.totals.totalMatCost),
+                        formatNumberForPDF(projectData.totals.totalHours, 1),
+                        formatCurrencyForPDF(projectData.totals.laborCost),
+                        formatCurrencyForPDF(projectData.totals.totalDirectCost)
+                    ],
+                    [
+                        'TOTAL INDIRECT COSTS & MARKUP',
+                        formatCurrencyForPDF(totalIndirectMarkup),
+                        '',
+                        '',
+                        formatCurrencyForPDF(totalIndirectMarkup)
+                    ],
+                    [
+                        'GRAND TOTAL',
+                        formatCurrencyForPDF(projectData.totals.totalMatCost + totalIndirectMarkup),
+                        formatNumberForPDF(projectData.totals.totalHours, 1),
+                        formatCurrencyForPDF(projectData.totals.laborCost),
+                        formatCurrencyForPDF(projectData.totals.finalPrice)
+                    ]
+                ];
+
+                doc.autoTable({
+                    ...TABLE_OPTS,
+                    startY,
+                    head: [['Category','Material Cost','Labor Hours','Labor Cost','Total Cost']],
+                    body: summaryBody,
+                    columnStyles: {
+                        0:{ cellWidth: w.scope + w.itemNo + 20 }, // Wider for categories
+                        1:{ cellWidth: w.mat, halign:'right' },
+                        2:{ cellWidth: w.hrs, halign:'right' },
+                        3:{ cellWidth: w.lab, halign:'right' },
+                        4:{ cellWidth: w.tot, halign:'right' }
+                    },
+                    didParseCell(data) {
+                        if (data.section === 'body' && data.row.index === summaryBody.length - 1) {
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                });
+
+                const fileName = (projectData.projectName || 'estimate').replace(/[^a-z0-9]/gi, '_') + '_boxes_covers_estimate.pdf';
+                doc.save(fileName);
+
+            } catch (e) {
+                console.error('PDF Generation Error:', e);
+                alert('Error generating PDF: ' + e.message);
+            }
         }
 
-        function resetForm() {
-            location.reload();
+        function exportToExcel() {
+            if (!projectData?.totals) {
+                alert('No results to export. Please calculate an estimate first.');
+                return;
+            }
+
+            try {
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+
+                // Main Data Sheet
+                const mainData = [
+                    // Project Information
+                    ['Project:', projectData.projectName || ''],
+                    ['Client:', projectData.clientName || ''],
+                    ['Location:', projectData.projectLocation || ''],
+                    ['Prepared By:', projectData.preparedBy || ''],
+                    ['Date:', projectData.projectDate || ''],
+                    ['Total Gangs:', projectData.parameters.totalGangs],
+                    ['Wall Area:', projectData.parameters.wallArea, 'm²'],
+                    ['Outlet Density:', projectData.parameters.density, 'per m²'],
+                    [], // Empty row
+                    
+                    // Bill of Quantity Header
+                    ['Item No.', 'Scope of Work', 'Quantity', 'Unit', 'Material Cost', 'Labor Hours', 'Labor Cost', 'Total Cost'],
+                ];
+
+                let itemNo = 1;
+
+                // Box items
+                const boxItems = [
+                    { key: 'junc', name: 'Junction Box (4x4")', unit: 'pcs' },
+                    { key: 'util', name: 'Utility Box', unit: 'pcs' },
+                    { key: 'sq', name: 'Square Box', unit: 'pcs' },
+                    { key: 'pull', name: 'Pull Box (8x8")', unit: 'pcs' },
+                    { key: 'gutter', name: 'Gutter', unit: 'pcs' },
+                    { key: 'nip', name: 'Closed Nipple', unit: 'pcs' },
+                    { key: 'wire4', name: 'Wireway 4x4"', unit: 'pcs' },
+                    { key: 'wire6', name: 'Wireway 6x6"', unit: 'pcs' },
+                    { key: 'wire8', name: 'Wireway 8x8"', unit: 'pcs' },
+                    { key: 'cover', name: 'Covers', unit: 'pcs' }
+                ];
+
+                boxItems.forEach(item => {
+                    if (projectData.quantities[item.key] > 0) {
+                        const materialCost = projectData.quantities[item.key] * projectData.costs[item.key];
+                        mainData.push([
+                            itemNo++,
+                            item.name,
+                            projectData.quantities[item.key],
+                            item.unit,
+                            materialCost,
+                            "",
+                            "",
+                            materialCost
+                        ]);
+                    }
+                });
+
+                // Installation labor
+                mainData.push([
+                    itemNo++,
+                    'Box Installation Labor',
+                    projectData.parameters.totalGangs,
+                    'gangs',
+                    "",
+                    projectData.totals.totalHours,
+                    projectData.totals.laborCost,
+                    projectData.totals.laborCost
+                ]);
+
+                // Total Direct Costs
+                mainData.push([
+                    "",
+                    "TOTAL DIRECT COSTS",
+                    "",
+                    "",
+                    projectData.totals.totalMatCost,
+                    projectData.totals.totalHours,
+                    projectData.totals.laborCost,
+                    projectData.totals.totalDirectCost
+                ]);
+
+                mainData.push([]); // Empty row
+
+                // Indirect Costs & Markup Header
+                mainData.push(['Item No.', 'Scope of Work', 'Quantity', 'Unit', 'Material Cost', 'Labor Hours', 'Labor Cost', 'Total Cost']);
+
+                // Overhead
+                mainData.push([
+                    itemNo++,
+                    `Overhead (${projectData.parameters.overheadRate}%)`,
+                    1,
+                    'lot',
+                    projectData.totals.overheadCost,
+                    "",
+                    "",
+                    projectData.totals.overheadCost
+                ]);
+
+                // Profit Margin
+                mainData.push([
+                    itemNo++,
+                    `Profit Margin (${projectData.parameters.profitMarginRate}%)`,
+                    1,
+                    'lot',
+                    projectData.totals.profit,
+                    "",
+                    "",
+                    projectData.totals.profit
+                ]);
+
+                // Total Indirect & Markup
+                const totalIndirectMarkup = projectData.totals.overheadCost + projectData.totals.profit;
+                mainData.push([
+                    "",
+                    "TOTAL INDIRECT COSTS & MARKUP",
+                    "",
+                    "",
+                    totalIndirectMarkup,
+                    "",
+                    "",
+                    totalIndirectMarkup
+                ]);
+
+                mainData.push([]); // Empty row
+
+                // Summary Section
+                mainData.push(['Category', '', '', '', 'Material Cost', 'Labor Hours', 'Labor Cost', 'Total Cost']);
+                
+                mainData.push([
+                    'TOTAL DIRECT COSTS',
+                    '', '', '',
+                    projectData.totals.totalMatCost,
+                    projectData.totals.totalHours,
+                    projectData.totals.laborCost,
+                    projectData.totals.totalDirectCost
+                ]);
+
+                mainData.push([
+                    'TOTAL INDIRECT COSTS & MARKUP',
+                    '', '', '',
+                    totalIndirectMarkup,
+                    "", "",
+                    totalIndirectMarkup
+                ]);
+
+                mainData.push([
+                    'GRAND TOTAL',
+                    '', '', '',
+                    projectData.totals.totalMatCost + totalIndirectMarkup,
+                    projectData.totals.totalHours,
+                    projectData.totals.laborCost,
+                    projectData.totals.finalPrice
+                ]);
+
+                const wsMain = XLSX.utils.aoa_to_sheet(mainData);
+
+                // Apply formatting
+                const currencyCols = [4, 6, 7]; // Material Cost, Labor Cost, Total Cost columns (0-indexed)
+                const numberCols = [2, 5]; // Quantity, Labor Hours columns (0-indexed)
+
+                for (let r = 0; r < mainData.length; r++) {
+                    // Currency formatting
+                    currencyCols.forEach(col => {
+                        const cellRef = XLSX.utils.encode_cell({r: r, c: col});
+                        if (wsMain[cellRef] && typeof wsMain[cellRef].v === 'number') {
+                            wsMain[cellRef].z = '#,##0.00';
+                        }
+                    });
+
+                    // Number formatting
+                    numberCols.forEach(col => {
+                        const cellRef = XLSX.utils.encode_cell({r: r, c: col});
+                        if (wsMain[cellRef] && typeof wsMain[cellRef].v === 'number') {
+                            wsMain[cellRef].z = col === 5 ? '0.0' : '0';
+                        }
+                    });
+                }
+
+                XLSX.utils.book_append_sheet(wb, wsMain, 'Boxes & Covers Estimate');
+
+                // Save Excel file
+                const safeName = (projectData.projectName || 'project').replace(/[^a-z0-9]/gi, '_');
+                XLSX.writeFile(wb, `${safeName}_boxes_covers_estimate.xlsx`);
+
+            } catch (err) {
+                console.error(err);
+                alert('Error generating Excel file: ' + err.message);
+            }
         }
+
     </script>
 </body>
 </html>
