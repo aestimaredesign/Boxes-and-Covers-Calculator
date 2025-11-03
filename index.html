@@ -1603,335 +1603,338 @@
         }
 
         // PDF Export Functions
-        function getSelectedCurrency() {
-            const el = document.getElementById('currency');
-            return el ? el.value : 'PHP';
+function getSelectedCurrency() {
+    const el = document.getElementById('currency');
+    return el ? el.value : 'PHP';
+}
+
+function getPdfCurrencyPrefix(code) {
+    switch (code) {
+        case 'PHP': return 'PHP';
+        case 'USD': return '$';
+        case 'EUR': return '€';
+        case 'JPY': return '¥';
+        default: return code + '';
+    }
+}
+
+function formatNumberForPDF(num, decimals = 2) {
+    if (typeof num !== 'number' || isNaN(num)) return '0';
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
+}
+
+function formatCurrencyForPDF(n) {
+    if (typeof n !== 'number' || isNaN(n)) return '0.00';
+    const prefix = getPdfCurrencyPrefix(getSelectedCurrency());
+    return `${prefix}${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function exportToPdf() {
+    const { jsPDF } = window.jspdf;
+    if (!projectData?.totals) {
+        alert('No results to export. Please calculate an estimate first.');
+        return;
+    }
+
+    try {
+        const doc = new jsPDF({
+            orientation: 'portrait', unit: 'pt', format: 'a4'
+        });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // Reserved areas
+        const HEADER_H = 65;
+        const FOOTER_H = 30;
+        const CONTENT_MARGIN_L = 35;
+        const CONTENT_MARGIN_R = 35;
+
+        // Common styles
+        const BRAND = { r: 44, g: 62, b: 80 }; // #2c3e50
+        doc.setFont('helvetica', 'normal');
+
+        // Header/Footer drawer (runs on every page)
+        function drawHeaderFooter(data) {
+            // Header bar
+            doc.setFillColor(240, 240, 240);
+            doc.rect(0, 0, pageWidth, HEADER_H, 'F');
+
+            // Title
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+            doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
+            doc.text('ELECTRICAL BOXES & COVERS ESTIMATE', pageWidth / 2, 24, { align: 'center' });
+
+            // Meta
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(0);
+            const projectName = document.getElementById('projectName').value || 'Unnamed Project';
+            const clientName = document.getElementById('clientName').value || 'Not specified';
+            const preparedBy = document.getElementById('preparedBy').value || 'Not specified';
+            const dateStr = document.getElementById('projectDate').value || '';
+
+            doc.text(`Project: ${projectName}`, CONTENT_MARGIN_L, 40);
+            doc.text(`Client: ${clientName}`, CONTENT_MARGIN_L, 52);
+            doc.text(`Prepared By: ${preparedBy}`, pageWidth - CONTENT_MARGIN_R, 40,
+                { align: 'right' });
+
+            doc.text(`Date: ${dateStr}`, pageWidth - CONTENT_MARGIN_R, 52,
+                { align: 'right' });
+
+            // Header rule
+            doc.setDrawColor(BRAND.r, BRAND.g, BRAND.b); doc.setLineWidth(0.5);
+            doc.line(CONTENT_MARGIN_L, HEADER_H - 6, pageWidth - CONTENT_MARGIN_R, HEADER_H - 6);
+
+            // Footer
+            const pageNumber = doc.internal.getNumberOfPages();
+            doc.setFontSize(8); doc.setTextColor(100);
+            doc.text(`Page ${pageNumber}`, pageWidth / 2, pageHeight - 12, { align: 'center' });
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, CONTENT_MARGIN_L, pageHeight - 12);
+            doc.text(`Total Gangs: ${projectData.parameters.totalGangs}`, pageWidth - CONTENT_MARGIN_R, pageHeight - 12, { align: 'right' });
         }
 
-        function getPdfCurrencyPrefix(code) {
-            switch (code) {
-                case 'PHP': return 'PHP ';
-                case 'USD': return '$';
-                case 'EUR': return '€';
-                case 'JPY': return '¥';
-                default:    return code + ' ';
-            }
+        // Common AutoTable options
+        const TABLE_OPTS = {
+            margin: { left: CONTENT_MARGIN_L, right: CONTENT_MARGIN_R, top: HEADER_H + 6, bottom: FOOTER_H + 6 },
+            styles: {
+                font: 'helvetica',
+                fontSize: 7,
+                cellPadding: 2.5,
+                lineWidth: 0.25,
+                lineColor: 100,
+                overflow: 'linebreak',
+                valign: 'middle'
+            },
+            headStyles: {
+                fillColor: [BRAND.r, BRAND.g, BRAND.b],
+                textColor: 255,
+                fontStyle: 'bold',
+                fontSize: 7
+            },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+            didDrawPage: drawHeaderFooter
+        };
+
+        // Section helper
+        function sectionTitle(text) {
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+            doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
+            const y = (doc.lastAutoTable?.finalY || (HEADER_H + 12)) + 12;
+            doc.text(text, CONTENT_MARGIN_L, y);
+            return y + 4;
         }
 
-        function formatNumberForPDF(num, decimals = 2) {
-            if (typeof num !== 'number' || isNaN(num)) return '0';
-            return num.toLocaleString('en-US', {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
-            });
-        }
+        // Column widths (total: 22+135+40+28+70+50+70+80 = 495pt)
+        const w = {
+            itemNo: 22,
+            scope: 135,
+            qty: 40,
+            unit: 28,
+            mat: 70,
+            hrs: 50,
+            lab: 70,
+            tot: 80
+        };
 
-        function formatCurrencyForPDF(n) {
-            if (typeof n !== 'number' || isNaN(n)) return '0.00';
-            const prefix = getPdfCurrencyPrefix(getSelectedCurrency());
-            return `${prefix}${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
+        // ==== Bill of Quantity ====
+        let startY = sectionTitle('BILL OF QUANTITY');
+        const boqHead = [['Item No.', 'Scope of Work', 'Quantity', 'Unit', 'Material Cost', 'Labor Hours', 'Labor Cost', 'Total Cost']];
+        const boqBody = [];
+        let itemNo = 1;
 
-        function exportToPdf() {
-            const { jsPDF } = window.jspdf;
-            if (!projectData?.totals) {
-                alert('No results to export. Please calculate an estimate first.');
-                return;
-            }
+        // Add box items
+        const boxItems = [
+            { key: 'junc', name: 'Junction Box (4x4")', unit: 'pcs' },
+            { key: 'util', name: 'Utility Box', unit: 'pcs' },
+            { key: 'sq', name: 'Square Box', unit: 'pcs' },
+            { key: 'pull', name: 'Pull Box (8x8")', unit: 'pcs' },
+            { key: 'gutter', name: 'Gutter', unit: 'pcs' },
+            { key: 'nip', name: 'Closed Nipple', unit: 'pcs' },
+            { key: 'wire4', name: 'Wireway 4x4"', unit: 'pcs' },
+            { key: 'wire6', name: 'Wireway 6x6"', unit: 'pcs' },
+            { key: 'wire8', name: 'Wireway 8x8"', unit: 'pcs' },
+            { key: 'cover', name: 'Covers', unit: 'pcs' }
+        ];
 
-            try {
-                const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-                const pageWidth  = doc.internal.pageSize.getWidth();
-                const pageHeight = doc.internal.pageSize.getHeight();
-
-                // Reserved areas
-                const HEADER_H = 65;
-                const FOOTER_H = 30;
-                const CONTENT_MARGIN_L = 35;
-                const CONTENT_MARGIN_R = 35;
-
-                // Common styles
-                const BRAND = { r:44, g:62, b:80 }; // #2c3e50
-                doc.setFont('helvetica', 'normal');
-
-                // Header/ Footer drawer (runs on every page)
-                function drawHeaderFooter(data) {
-                    // Header bar
-                    doc.setFillColor(240,240,240);
-                    doc.rect(0, 0, pageWidth, HEADER_H, 'F');
-
-                    // Title
-                    doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(BRAND.r,BRAND.g,BRAND.b);
-                    doc.text('ELECTRICAL BOXES & COVERS ESTIMATE', pageWidth/2, 24, { align: 'center' });
-
-                    // Meta
-                    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(0);
-                    const projectName = document.getElementById('projectName').value || 'Unnamed Project';
-                    const clientName  = document.getElementById('clientName').value || 'Not specified';
-                    const preparedBy  = document.getElementById('preparedBy').value || 'Not specified';
-                    const dateStr     = document.getElementById('projectDate').value || '';
-
-                    doc.text(`Project: ${projectName}`, CONTENT_MARGIN_L, 40);
-                    doc.text(`Client: ${clientName}`,  CONTENT_MARGIN_L, 52);
-                    doc.text(`Prepared By: ${preparedBy}`, pageWidth - CONTENT_MARGIN_R, 40, { align:'right' });
-                    doc.text(`Date: ${dateStr}`,         pageWidth - CONTENT_MARGIN_R, 52, { align:'right' });
-
-                    // Header rule
-                    doc.setDrawColor(BRAND.r,BRAND.g,BRAND.b); doc.setLineWidth(0.5);
-                    doc.line(CONTENT_MARGIN_L, HEADER_H-6, pageWidth - CONTENT_MARGIN_R, HEADER_H-6);
-
-                    // Footer
-                    const pageNumber = doc.internal.getNumberOfPages();
-                    doc.setFontSize(8); doc.setTextColor(100);
-                    doc.text(`Page ${pageNumber}`, pageWidth/2, pageHeight - 12, { align:'center' });
-                    doc.text(`Generated: ${new Date().toLocaleDateString()}`, CONTENT_MARGIN_L, pageHeight - 12);
-                    doc.text(`Total Gangs: ${projectData.parameters.totalGangs}`, pageWidth - CONTENT_MARGIN_R, pageHeight - 12, { align:'right' });
-                }
-
-                // Common AutoTable options
-                const TABLE_OPTS = {
-                    margin: { left: CONTENT_MARGIN_L, right: CONTENT_MARGIN_R, top: HEADER_H + 6, bottom: FOOTER_H + 6 },
-                    styles: {
-                        font: 'helvetica',
-                        fontSize: 7,
-                        cellPadding: 2.5,
-                        lineWidth: 0.25,
-                        lineColor: 100,
-                        overflow: 'linebreak',
-                        valign: 'middle'
-                    },
-                    headStyles: {
-                        fillColor: [BRAND.r, BRAND.g, BRAND.b],
-                        textColor: 255,
-                        fontStyle: 'bold',
-                        fontSize: 7
-                    },
-                    alternateRowStyles: { fillColor: [245,245,245] },
-                    didDrawPage: drawHeaderFooter
-                };
-
-                // Section helper
-                function sectionTitle(text) {
-                    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(BRAND.r,BRAND.g,BRAND.b);
-                    const y = (doc.lastAutoTable?.finalY || (HEADER_H + 12)) + 12;
-                    doc.text(text, CONTENT_MARGIN_L, y);
-                    return y + 4;
-                }
-
-                // Column widths (total: 22+135+40+28+70+50+70+80 = 495pt)
-                const w = {
-                    itemNo: 22,
-                    scope: 135,  
-                    qty: 40,
-                    unit: 28,
-                    mat: 70,
-                    hrs: 50,
-                    lab: 70,
-                    tot: 80
-                };
-
-                // ===== Bill of Quantity =====
-                let startY = sectionTitle('BILL OF QUANTITY');
-                const boqHead = [['Item No.','Scope of Work','Quantity','Unit','Material Cost','Labor Hours','Labor Cost','Total Cost']];
-                const boqBody = [];
-                let itemNo = 1;
-
-                // Add box items
-                const boxItems = [
-                    { key: 'junc', name: 'Junction Box (4x4")', unit: 'pcs' },
-                    { key: 'util', name: 'Utility Box', unit: 'pcs' },
-                    { key: 'sq', name: 'Square Box', unit: 'pcs' },
-                    { key: 'pull', name: 'Pull Box (8x8")', unit: 'pcs' },
-                    { key: 'gutter', name: 'Gutter', unit: 'pcs' },
-                    { key: 'nip', name: 'Closed Nipple', unit: 'pcs' },
-                    { key: 'wire4', name: 'Wireway 4x4"', unit: 'pcs' },
-                    { key: 'wire6', name: 'Wireway 6x6"', unit: 'pcs' },
-                    { key: 'wire8', name: 'Wireway 8x8"', unit: 'pcs' },
-                    { key: 'cover', name: 'Covers', unit: 'pcs' }
-                ];
-
-                boxItems.forEach(item => {
-                    if (projectData.quantities[item.key] > 0) {
-                        const materialCost = projectData.quantities[item.key] * projectData.costs[item.key];
-                        boqBody.push([
-                            String(itemNo++),
-                            item.name,
-                            formatNumberForPDF(projectData.quantities[item.key]),
-                            item.unit,
-                            formatCurrencyForPDF(materialCost),
-                            '-',
-                            '-',
-                            formatCurrencyForPDF(materialCost)
-                        ]);
-                    }
-                });
-
-                // Add installation labor
+        boxItems.forEach(item => {
+            if (projectData.quantities[item.key] > 0) {
+                const materialCost = projectData.quantities[item.key] * projectData.costs[item.key];
                 boqBody.push([
                     String(itemNo++),
-                    'Box Installation Labor',
-                    formatNumberForPDF(projectData.parameters.totalGangs),
-                    'gangs',
+                    item.name,
+                    formatNumberForPDF(projectData.quantities[item.key]),
+                    item.unit,
+                    formatCurrencyForPDF(materialCost),
                     '-',
-                    formatNumberForPDF(projectData.totals.totalHours, 1),
-                    formatCurrencyForPDF(projectData.totals.laborCost),
-                    formatCurrencyForPDF(projectData.totals.laborCost)
+                    '-',
+                    formatCurrencyForPDF(materialCost)
                 ]);
-
-                // Add total direct costs row
-                boqBody.push([
-                    '', 'TOTAL DIRECT COSTS', '', '',
-                    formatCurrencyForPDF(projectData.totals.totalMatCost),
-                    formatNumberForPDF(projectData.totals.totalHours, 1),
-                    formatCurrencyForPDF(projectData.totals.laborCost),
-                    formatCurrencyForPDF(projectData.totals.totalDirectCost)
-                ]);
-
-                doc.autoTable({
-                    ...TABLE_OPTS,
-                    startY,
-                    head: boqHead,
-                    body: boqBody,
-                    columnStyles: {
-                        0:{ cellWidth: w.itemNo, halign:'center' },
-                        1:{ cellWidth: w.scope, cellPadding: 2 },
-                        2:{ cellWidth: w.qty, halign:'right' },
-                        3:{ cellWidth: w.unit, halign:'center' },
-                        4:{ cellWidth: w.mat, halign:'right' },
-                        5:{ cellWidth: w.hrs, halign:'right' },
-                        6:{ cellWidth: w.lab, halign:'right' },
-                        7:{ cellWidth: w.tot, halign:'right' }
-                    },
-                    didParseCell(data) {
-                        // Bold last row (TOTAL)
-                        if (data.section === 'body' && data.row.index === boqBody.length - 1) {
-                            data.cell.styles.fontStyle = 'bold';
-                        }
-                        // Ensure text fits in scope column
-                        if (data.column.index === 1 && data.cell.raw.length > 50) {
-                            data.cell.styles.fontSize = 6.5;
-                        }
-                    }
-                });
-
-                // ===== Indirect Costs & Markup =====
-                startY = sectionTitle('INDIRECT COSTS & MARKUP');
-                const indirectBody = [];
-                itemNo = 1;
-
-                // Overhead
-                indirectBody.push([
-                    String(itemNo++),
-                    `Overhead (${projectData.parameters.overheadRate}%)`,
-                    '1',
-                    'lot',
-                    formatCurrencyForPDF(projectData.totals.overheadCost),
-                    '-',
-                    '-',
-                    formatCurrencyForPDF(projectData.totals.overheadCost)
-                ]);
-
-                // Profit Margin
-                indirectBody.push([
-                    String(itemNo++),
-                    `Profit Margin (${projectData.parameters.profitMarginRate}%)`,
-                    '1',
-                    'lot',
-                    formatCurrencyForPDF(projectData.totals.profit),
-                    '-',
-                    '-',
-                    formatCurrencyForPDF(projectData.totals.profit)
-                ]);
-
-                // Total Indirect & Markup
-                const totalIndirectMarkup = projectData.totals.overheadCost + projectData.totals.profit;
-                indirectBody.push([
-                    '',
-                    'TOTAL INDIRECT COSTS & MARKUP',
-                    '',
-                    '',
-                    formatCurrencyForPDF(totalIndirectMarkup),
-                    '-',
-                    '-',
-                    formatCurrencyForPDF(totalIndirectMarkup)
-                ]);
-
-                doc.autoTable({
-                    ...TABLE_OPTS,
-                    startY,
-                    head: [['Item No.','Scope of Work','Quantity','Unit','Material Cost','Labor Hours','Labor Cost','Total Cost']],
-                    body: indirectBody,
-                    columnStyles: {
-                        0:{ cellWidth: w.itemNo, halign:'center' },
-                        1:{ cellWidth: w.scope, cellPadding: 2 },
-                        2:{ cellWidth: w.qty, halign:'right' },
-                        3:{ cellWidth: w.unit, halign:'center' },
-                        4:{ cellWidth: w.mat, halign:'right' },
-                        5:{ cellWidth: w.hrs, halign:'right' },
-                        6:{ cellWidth: w.lab, halign:'right' },
-                        7:{ cellWidth: w.tot, halign:'right' }
-                    },
-                    didParseCell(data) {
-                        if (data.section === 'body' && data.row.index === indirectBody.length - 1) {
-                            data.cell.styles.fontStyle = 'bold';
-                        }
-                    }
-                });
-
-                // ===== Summary =====
-                startY = sectionTitle('SUMMARY');
-                const summaryBody = [
-                    [
-                        'TOTAL DIRECT COSTS',
-                        formatCurrencyForPDF(projectData.totals.totalMatCost),
-                        formatNumberForPDF(projectData.totals.totalHours, 1),
-                        formatCurrencyForPDF(projectData.totals.laborCost),
-                        formatCurrencyForPDF(projectData.totals.totalDirectCost)
-                    ],
-                    [
-                        'TOTAL INDIRECT COSTS & MARKUP',
-                        formatCurrencyForPDF(totalIndirectMarkup),
-                        '',
-                        '',
-                        formatCurrencyForPDF(totalIndirectMarkup)
-                    ],
-                    [
-                        'GRAND TOTAL',
-                        formatCurrencyForPDF(projectData.totals.totalMatCost + totalIndirectMarkup),
-                        formatNumberForPDF(projectData.totals.totalHours, 1),
-                        formatCurrencyForPDF(projectData.totals.laborCost),
-                        formatCurrencyForPDF(projectData.totals.finalPrice)
-                    ]
-                ];
-
-                doc.autoTable({
-                    ...TABLE_OPTS,
-                    startY,
-                    head: [['Category','Material Cost','Labor Hours','Labor Cost','Total Cost']],
-                    body: summaryBody,
-                    columnStyles: {
-                        0:{ cellWidth: w.scope + w.itemNo + 20 }, // Wider for categories
-                        1:{ cellWidth: w.mat, halign:'right' },
-                        2:{ cellWidth: w.hrs, halign:'right' },
-                        3:{ cellWidth: w.lab, halign:'right' },
-                        4:{ cellWidth: w.tot, halign:'right' }
-                    },
-                    didParseCell(data) {
-                        if (data.section === 'body' && data.row.index === summaryBody.length - 1) {
-                            data.cell.styles.fontStyle = 'bold';
-                        }
-                    }
-                });
-
-                const fileName = (projectData.projectName || 'estimate').replace(/[^a-z0-9]/gi, '_') + '_boxes_covers_estimate.pdf';
-                doc.save(fileName);
-
-            } catch (e) {
-                console.error('PDF Generation Error:', e);
-                alert('Error generating PDF: ' + e.message);
             }
-        }
+        });
 
+        // Add installation labor
+        boqBody.push([
+            String(itemNo++),
+            'Box Installation Labor',
+            formatNumberForPDF(projectData.parameters.totalGangs),
+            'gangs',
+            '-',
+            formatNumberForPDF(projectData.totals.totalHours, 1),
+            formatCurrencyForPDF(projectData.totals.laborCost),
+            formatCurrencyForPDF(projectData.totals.laborCost)
+        ]);
+
+        // Add total direct costs row
+        boqBody.push([
+            '', 'TOTAL DIRECT COSTS', '', '',
+            formatCurrencyForPDF(projectData.totals.totalMatCost),
+            formatNumberForPDF(projectData.totals.totalHours, 1),
+            formatCurrencyForPDF(projectData.totals.laborCost),
+            formatCurrencyForPDF(projectData.totals.totalDirectCost)
+        ]);
+
+        doc.autoTable({
+            ...TABLE_OPTS,
+            startY,
+            head: boqHead,
+            body: boqBody,
+            columnStyles: {
+                0: { cellWidth: w.itemNo, halign: 'center' },
+                1: { cellWidth: w.scope, cellPadding: 2 },
+                2: { cellWidth: w.qty, halign: 'right' },
+                3: { cellWidth: w.unit, halign: 'center' },
+                4: { cellWidth: w.mat, halign: 'right' },
+                5: { cellWidth: w.hrs, halign: 'right' },
+                6: { cellWidth: w.lab, halign: 'right' },
+                7: { cellWidth: w.tot, halign: 'right' }
+            },
+            didParseCell(data) {
+                // Bold last row (TOTAL)
+                if (data.section === 'body' && data.row.index === boqBody.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                }
+                // Ensure text fits in scope column
+                if (data.column.index === 1 && data.cell.raw.length > 50) {
+                    data.cell.styles.fontSize = 6.5;
+                }
+            }
+        });
+
+        // ==== Indirect Costs & Markup ====
+        startY = sectionTitle('INDIRECT COSTS & MARKUP');
+        const indirectBody = [];
+        itemNo = 1;
+
+        // Overhead
+        indirectBody.push([
+            String(itemNo++),
+            `Overhead (${projectData.parameters.overheadRate}%)`,
+            '1',
+            'lot',
+            formatCurrencyForPDF(projectData.totals.overheadCost),
+            '-',
+            '-',
+            formatCurrencyForPDF(projectData.totals.overheadCost)
+        ]);
+
+        // Profit Margin
+        indirectBody.push([
+            String(itemNo++),
+            `Profit Margin (${projectData.parameters.profitMarginRate}%)`,
+            '1',
+            'lot',
+            formatCurrencyForPDF(projectData.totals.profit),
+            '-',
+            '-',
+            formatCurrencyForPDF(projectData.totals.profit)
+        ]);
+
+        // Total Indirect & Markup
+        const totalIndirectMarkup = projectData.totals.overheadCost + projectData.totals.profit;
+        indirectBody.push([
+            '', 'TOTAL INDIRECT COSTS & MARKUP', '', '',
+            formatCurrencyForPDF(totalIndirectMarkup),
+            '-',
+            '-',
+            formatCurrencyForPDF(totalIndirectMarkup)
+        ]);
+
+        doc.autoTable({
+            ...TABLE_OPTS,
+            startY,
+            head: [['Item No.', 'Scope of Work', 'Quantity', 'Unit', 'Material Cost', 'Labor Hours', 'Labor Cost', 'Total Cost']],
+            body: indirectBody,
+            columnStyles: {
+                0: { cellWidth: w.itemNo, halign: 'center' },
+                1: { cellWidth: w.scope, cellPadding: 2 },
+                2: { cellWidth: w.qty, halign: 'right' },
+                3: { cellWidth: w.unit, halign: 'center' },
+                4: { cellWidth: w.mat, halign: 'right' },
+                5: { cellWidth: w.hrs, halign: 'right' },
+                6: { cellWidth: w.lab, halign: 'right' },
+                7: { cellWidth: w.tot, halign: 'right' }
+            },
+            didParseCell(data) {
+                if (data.section === 'body' && data.row.index === indirectBody.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        });
+
+        // ==== Summary ====
+        startY = sectionTitle('SUMMARY');
+        const summaryBody = [
+            [
+                'TOTAL DIRECT COSTS',
+                formatCurrencyForPDF(projectData.totals.totalMatCost),
+                formatNumberForPDF(projectData.totals.totalHours, 1),
+                formatCurrencyForPDF(projectData.totals.laborCost),
+                formatCurrencyForPDF(projectData.totals.totalDirectCost)
+            ],
+            [
+                'TOTAL INDIRECT COSTS & MARKUP',
+                formatCurrencyForPDF(totalIndirectMarkup),
+                '',
+                '',
+                formatCurrencyForPDF(totalIndirectMarkup)
+            ],
+            [
+                'GRAND TOTAL',
+                formatCurrencyForPDF(projectData.totals.totalMatCost + totalIndirectMarkup),
+                formatNumberForPDF(projectData.totals.totalHours, 1),
+                formatCurrencyForPDF(projectData.totals.laborCost),
+                formatCurrencyForPDF(projectData.totals.finalPrice)
+            ]
+        ];
+
+        doc.autoTable({
+            ...TABLE_OPTS,
+            startY,
+            head: [['Category', 'Material Cost', 'Labor Hours', 'Labor Cost', 'Total Cost']],
+            body: summaryBody,
+            columnStyles: {
+                0: { cellWidth: w.scope + w.itemNo + 20 }, // Wider for categories
+                1: { cellWidth: w.mat, halign: 'right' },
+                2: { cellWidth: w.hrs, halign: 'right' },
+                3: { cellWidth: w.lab, halign: 'right' },
+                4: { cellWidth: w.tot, halign: 'right' }
+            },
+            didParseCell(data) {
+                if (data.section === 'body' && data.row.index === summaryBody.length - 1) {
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        });
+
+        const fileName = (projectData.projectName || 'estimate').replace(/[^a-z0-9]/gi, '_') + '_boxes_covers_estimate.pdf';
+        doc.save(fileName);
+
+    } catch (e) {
+        console.error('PDF Generation Error:', e);
+        alert('Error generating PDF: ' + e.message);
+    }
+}
         function exportToExcel() {
             if (!projectData?.totals) {
                 alert('No results to export. Please calculate an estimate first.');
